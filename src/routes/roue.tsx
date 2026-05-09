@@ -210,28 +210,31 @@ function RouePage() {
             style={{ background: conicGradient, border: "4px solid #1a1a1a" }}
           >
             {SEGMENTS.map((s, i) => {
-              // segment center angle, measured clockwise from top (12 o'clock)
+              // segment center angle (clockwise from top)
               const center = i * SEG_ANGLE + SEG_ANGLE / 2;
+              // place label at ~65% of the radius (well inside the slice)
               return (
                 <div
                   key={s.label}
-                  className="pointer-events-none absolute left-1/2 top-1/2"
+                  className="pointer-events-none absolute left-1/2 top-1/2 h-0 w-0"
                   style={{
-                    // 1) move to center, 2) rotate so up-axis points to segment center, 3) push outward, 4) counter-rotate text upright-ish
-                    transform: `translate(-50%, -50%) rotate(${center}deg) translateY(-58%)`,
-                    width: "44%",
+                    transform: `rotate(${center}deg) translateY(-65%)`,
+                    transformOrigin: "0 0",
                   }}
                 >
                   <div
-                    className="flex flex-col items-center justify-center gap-0.5 text-center"
-                    style={{ transform: `rotate(${-center}deg)` }}
+                    className="flex flex-col items-center justify-center gap-1 text-center"
+                    style={{
+                      transform: `translate(-50%, -50%) rotate(${-center}deg)`,
+                      width: "84px",
+                    }}
                   >
-                    <span className="text-3xl drop-shadow-[1px_1px_0_rgba(0,0,0,0.4)]">
+                    <span className="text-3xl leading-none drop-shadow-[1px_1px_0_rgba(0,0,0,0.4)]">
                       {s.emoji}
                     </span>
                     <span
-                      className="font-display text-[13px] font-extrabold uppercase leading-tight text-ink sm:text-sm"
-                      style={{ textShadow: "1px 1px 0 rgba(255,255,255,0.6)" }}
+                      className="font-display text-[12px] font-extrabold uppercase leading-[1.05] text-ink"
+                      style={{ textShadow: "1px 1px 0 rgba(255,255,255,0.7)" }}
                     >
                       {s.short}
                     </span>
