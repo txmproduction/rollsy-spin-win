@@ -210,21 +210,28 @@ function RouePage() {
             style={{ background: conicGradient, border: "4px solid #1a1a1a" }}
           >
             {SEGMENTS.map((s, i) => {
-              const angle = i * SEG_ANGLE + SEG_ANGLE / 2;
+              // segment center angle, measured clockwise from top (12 o'clock)
+              const center = i * SEG_ANGLE + SEG_ANGLE / 2;
               return (
                 <div
                   key={s.label}
-                  className="pointer-events-none absolute left-1/2 top-1/2 origin-left"
+                  className="pointer-events-none absolute left-1/2 top-1/2"
                   style={{
-                    transform: `translateY(-50%) rotate(${angle - 90}deg)`,
-                    width: "50%",
+                    // 1) move to center, 2) rotate so up-axis points to segment center, 3) push outward, 4) counter-rotate text upright-ish
+                    transform: `translate(-50%, -50%) rotate(${center}deg) translateY(-58%)`,
+                    width: "44%",
                   }}
                 >
-                  <div className="flex items-center justify-end gap-1 pr-5 text-right">
-                    <span className="text-2xl">{s.emoji}</span>
+                  <div
+                    className="flex flex-col items-center justify-center gap-0.5 text-center"
+                    style={{ transform: `rotate(${-center}deg)` }}
+                  >
+                    <span className="text-3xl drop-shadow-[1px_1px_0_rgba(0,0,0,0.4)]">
+                      {s.emoji}
+                    </span>
                     <span
                       className="font-display text-[13px] font-extrabold uppercase leading-tight text-ink sm:text-sm"
-                      style={{ textShadow: "1px 1px 0 rgba(255,255,255,0.5)" }}
+                      style={{ textShadow: "1px 1px 0 rgba(255,255,255,0.6)" }}
                     >
                       {s.short}
                     </span>
