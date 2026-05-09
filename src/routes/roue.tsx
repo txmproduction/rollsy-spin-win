@@ -78,8 +78,7 @@ function RouePage() {
       const end = (i + 1) * SEG_ANGLE;
       return `${s.color} ${start}deg ${end}deg`;
     }).join(", ");
-    // from 0deg => segment 0 starts at top (12 o'clock), goes clockwise
-    return `conic-gradient(from 0deg, ${stops})`;
+    return `conic-gradient(from -90deg, ${stops})`;
   }, []);
 
   const handleSpin = () => {
@@ -210,31 +209,21 @@ function RouePage() {
             style={{ background: conicGradient, border: "4px solid #1a1a1a" }}
           >
             {SEGMENTS.map((s, i) => {
-              // segment center angle (clockwise from top)
-              const center = i * SEG_ANGLE + SEG_ANGLE / 2;
-              // place label at ~65% of the radius (well inside the slice)
+              const angle = i * SEG_ANGLE + SEG_ANGLE / 2;
               return (
                 <div
                   key={s.label}
-                  className="pointer-events-none absolute left-1/2 top-1/2 h-0 w-0"
+                  className="pointer-events-none absolute left-1/2 top-1/2 origin-left"
                   style={{
-                    transform: `rotate(${center}deg) translateY(-65%)`,
-                    transformOrigin: "0 0",
+                    transform: `translateY(-50%) rotate(${angle - 90}deg)`,
+                    width: "50%",
                   }}
                 >
-                  <div
-                    className="flex flex-col items-center justify-center gap-1 text-center"
-                    style={{
-                      transform: `translate(-50%, -50%) rotate(${-center}deg)`,
-                      width: "84px",
-                    }}
-                  >
-                    <span className="text-3xl leading-none drop-shadow-[1px_1px_0_rgba(0,0,0,0.4)]">
-                      {s.emoji}
-                    </span>
+                  <div className="flex items-center justify-end gap-1 pr-5 text-right">
+                    <span className="text-2xl">{s.emoji}</span>
                     <span
-                      className="font-display text-[12px] font-extrabold uppercase leading-[1.05] text-ink"
-                      style={{ textShadow: "1px 1px 0 rgba(255,255,255,0.7)" }}
+                      className="font-display text-[13px] font-extrabold uppercase leading-tight text-ink sm:text-sm"
+                      style={{ textShadow: "1px 1px 0 rgba(255,255,255,0.5)" }}
                     >
                       {s.short}
                     </span>
@@ -330,14 +319,10 @@ function RouePage() {
                     </span>
                   </div>
                   <p className="mt-6 text-sm font-semibold text-ink/80">
-                    📸 <strong>Faites une capture d'écran</strong> de cette récompense.
+                    Montrez ce message à notre équipe pour profiter de votre récompense 🙌
                   </p>
-                  <p className="mt-2 text-sm font-semibold text-ink/80">
-                    Elle est utilisable <strong>lors de votre prochaine visite</strong>,
-                    sur présentation de la capture d'écran à notre équipe 🙌
-                  </p>
-                  <div className="ink-border mt-4 inline-block rounded-full bg-orange px-4 py-1.5 text-xs font-extrabold uppercase text-white">
-                    À conserver précieusement 🔒
+                  <div className="ink-border mt-3 inline-block rounded-full bg-orange px-3 py-1 text-xs font-extrabold uppercase text-white">
+                    Valable aujourd'hui uniquement
                   </div>
                   <button
                     onClick={() => {
