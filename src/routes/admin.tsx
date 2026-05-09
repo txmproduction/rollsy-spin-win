@@ -4,13 +4,12 @@ import { QRCodeCanvas } from "qrcode.react";
 import { motion } from "framer-motion";
 
 const PASSWORD = "rollsy2024";
-const GOOGLE_REVIEW_URL =
-  "https://www.google.com/search?q=La+Gamelle+Avis";
+const GOOGLE_REVIEW_URL = "https://www.google.com/search?q=La+Gamelle+Avis";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
     meta: [
-      { title: "Admin — Rollsy" },
+      { title: "Admin 🔐 — Rollsy" },
       { name: "description", content: "Espace administrateur Rollsy." },
       { name: "robots", content: "noindex,nofollow" },
     ],
@@ -46,17 +45,14 @@ function AdminPage() {
       sessionStorage.setItem("rollsy_admin", "1");
       setUnlocked(true);
       setError("");
-    } else {
-      setError("Mot de passe incorrect.");
-    }
+    } else setError("Mot de passe incorrect 🚫");
   };
 
   const downloadQR = () => {
     const canvas = qrWrapRef.current?.querySelector("canvas");
     if (!canvas) return;
-    const url = canvas.toDataURL("image/png");
     const a = document.createElement("a");
-    a.href = url;
+    a.href = canvas.toDataURL("image/png");
     a.download = "rollsy-qr-code.png";
     a.click();
   };
@@ -65,33 +61,36 @@ function AdminPage() {
     return (
       <main className="flex min-h-screen items-center justify-center px-4">
         <motion.form
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, y: 20, rotate: -2 }}
+          animate={{ opacity: 1, y: 0, rotate: 0 }}
           onSubmit={submit}
-          className="glass w-full max-w-sm rounded-3xl p-8"
+          className="ink-border-thick w-full max-w-sm rounded-3xl bg-white p-8 shadow-pop-pink"
         >
-          <h1 className="mb-2 font-display text-2xl font-bold text-[#FFD700]">
+          <div className="mb-4 text-5xl">🔐</div>
+          <h1 className="mb-2 font-display text-3xl font-extrabold">
             Espace admin
           </h1>
-          <p className="mb-6 text-sm text-white/60">
-            Saisissez le mot de passe pour accéder au panneau.
+          <p className="mb-6 text-sm font-semibold text-ink/70">
+            Saisissez le mot de passe.
           </p>
           <input
             type="password"
             value={pwd}
             onChange={(e) => setPwd(e.target.value)}
             placeholder="Mot de passe"
-            className="mb-3 min-h-[56px] w-full rounded-2xl border border-white/10 bg-white/5 px-4 text-white outline-none focus:border-[#FFD700]/50"
+            className="ink-border mb-3 min-h-[56px] w-full rounded-full bg-yellow/30 px-5 font-bold outline-none placeholder:text-ink/40 focus:bg-yellow/60"
           />
           {error && (
-            <p className="mb-3 text-sm text-red-400">{error}</p>
+            <p className="mb-3 text-sm font-bold text-orange-600">{error}</p>
           )}
-          <button
+          <motion.button
+            whileHover={{ scale: 1.04, y: -2 }}
+            whileTap={{ scale: 0.96, y: 2 }}
             type="submit"
-            className="min-h-[56px] w-full rounded-2xl bg-[#FFD700] px-6 font-bold text-[#1a0533]"
+            className="ink-border-thick min-h-[56px] w-full rounded-full bg-pink px-6 font-extrabold uppercase text-white shadow-pop-ink"
           >
-            Entrer
-          </button>
+            Entrer 🚀
+          </motion.button>
         </motion.form>
       </main>
     );
@@ -99,81 +98,90 @@ function AdminPage() {
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-10">
-      <h1 className="font-display text-3xl font-extrabold text-[#FFD700]">
-        Admin Rollsy
+      <h1
+        className="font-display text-4xl font-extrabold sm:text-5xl"
+        style={{
+          color: "#FF3DA6",
+          WebkitTextStroke: "2px #1a1a1a",
+          paintOrder: "stroke fill",
+          filter: "drop-shadow(4px 4px 0 #1a1a1a)",
+        }}
+      >
+        ADMIN ROLLSY 🎪
       </h1>
-      <p className="mt-2 text-white/70">
+      <p className="mt-4 text-base font-semibold text-ink/80">
         Imprimez ce QR code et placez-le sur vos tables ou à l'accueil. Vos
-        clients scannent, laissent un avis et tournent la roue !
+        clients scannent, laissent un avis et tournent la roue ! 🎉
       </p>
 
       <div className="mt-8 grid gap-6 sm:grid-cols-2">
-        <div className="glass rounded-3xl p-6">
-          <h2 className="mb-4 font-display text-lg font-bold text-white">
-            Votre QR code
+        <motion.div
+          initial={{ opacity: 0, y: 20, rotate: -2 }}
+          animate={{ opacity: 1, y: 0, rotate: -1 }}
+          className="ink-border-thick rounded-3xl bg-white p-6 shadow-pop-pink"
+        >
+          <h2 className="mb-4 font-display text-xl font-extrabold">
+            📱 Votre QR code
           </h2>
           <div
             ref={qrWrapRef}
-            className="flex items-center justify-center rounded-2xl bg-white p-5"
+            className="ink-border flex items-center justify-center rounded-2xl bg-white p-5"
           >
             {appUrl && (
-              <QRCodeCanvas
-                value={appUrl}
-                size={220}
-                level="H"
-                includeMargin={false}
-              />
+              <QRCodeCanvas value={appUrl} size={220} level="H" includeMargin={false} />
             )}
           </div>
-          <button
+          <motion.button
+            whileHover={{ scale: 1.04, y: -2 }}
+            whileTap={{ scale: 0.96, y: 2 }}
             onClick={downloadQR}
-            className="mt-4 min-h-[52px] w-full rounded-2xl bg-[#FFD700] px-5 font-bold text-[#1a0533]"
+            className="ink-border-thick mt-4 min-h-[52px] w-full rounded-full bg-yellow px-5 font-extrabold uppercase shadow-pop-ink"
           >
-            Télécharger le QR Code
-          </button>
-          <p className="mt-3 break-all text-xs text-white/50">{appUrl}</p>
-        </div>
+            ⬇️ Télécharger
+          </motion.button>
+          <p className="mt-3 break-all text-xs font-semibold text-ink/50">{appUrl}</p>
+        </motion.div>
 
-        <div className="space-y-4">
-          <div className="glass rounded-3xl p-6">
-            <h3 className="mb-2 text-xs uppercase tracking-widest text-white/50">
-              URL avis Google
+        <div className="space-y-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20, rotate: 2 }}
+            animate={{ opacity: 1, y: 0, rotate: 1 }}
+            className="ink-border-thick rounded-3xl bg-green p-6 shadow-pop-ink"
+          >
+            <h3 className="mb-2 text-xs font-extrabold uppercase tracking-widest text-ink">
+              ⭐ URL avis Google
             </h3>
-            <p className="break-all text-sm text-white/80">
-              {GOOGLE_REVIEW_URL}
-            </p>
-          </div>
-          <div className="glass rounded-3xl p-6">
-            <h3 className="mb-4 text-xs uppercase tracking-widest text-white/50">
-              Statistiques du jour
+            <p className="break-all text-sm font-bold text-ink">{GOOGLE_REVIEW_URL}</p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="ink-border-thick rounded-3xl bg-white p-6 shadow-pop-orange"
+          >
+            <h3 className="mb-4 text-xs font-extrabold uppercase tracking-widest text-ink/60">
+              📊 Stats du jour
             </h3>
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <div className="font-display text-3xl font-bold text-[#FFD700]">
-                  {stats.spins}
-                </div>
-                <div className="text-xs uppercase text-white/60">
-                  Tours
-                </div>
+              <div className="ink-border rounded-2xl bg-yellow p-4 text-center">
+                <div className="font-display text-4xl font-extrabold">{stats.spins}</div>
+                <div className="text-xs font-extrabold uppercase">🎰 Tours</div>
               </div>
-              <div>
-                <div className="font-display text-3xl font-bold text-[#FFD700]">
-                  {stats.rewards}
-                </div>
-                <div className="text-xs uppercase text-white/60">
-                  Récompenses
-                </div>
+              <div className="ink-border rounded-2xl bg-pink p-4 text-center text-white">
+                <div className="font-display text-4xl font-extrabold">{stats.rewards}</div>
+                <div className="text-xs font-extrabold uppercase">🎁 Gains</div>
               </div>
             </div>
-          </div>
+          </motion.div>
+
           <button
             onClick={() => {
               sessionStorage.removeItem("rollsy_admin");
               setUnlocked(false);
             }}
-            className="text-xs uppercase tracking-widest text-white/50 hover:text-white"
+            className="text-xs font-extrabold uppercase tracking-widest text-ink/50 hover:text-ink"
           >
-            Se déconnecter
+            🚪 Se déconnecter
           </button>
         </div>
       </div>
