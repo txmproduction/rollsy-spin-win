@@ -8,7 +8,7 @@ const GOOGLE_REVIEW_URL =
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Rollsy — Laissez un avis et tentez votre chance" },
+      { title: "Rollsy — Laissez un avis et tentez votre chance 🎉" },
       {
         name: "description",
         content:
@@ -20,22 +20,12 @@ export const Route = createFileRoute("/")({
 });
 
 const steps = [
-  {
-    icon: "📱",
-    title: "Scannez le QR code",
-    desc: "Disponible à l'accueil du restaurant",
-  },
-  {
-    icon: "⭐",
-    title: "Donnez votre avis Google",
-    desc: "Partagez votre expérience en 30 secondes",
-  },
-  {
-    icon: "🎰",
-    title: "Tournez la roue",
-    desc: "Et gagnez une récompense immédiate !",
-  },
+  { icon: "📱", title: "Scannez le QR code", desc: "Disponible à l'accueil du restaurant", color: "bg-pink" },
+  { icon: "⭐", title: "Donnez votre avis Google", desc: "Partagez votre expérience en 30 secondes", color: "bg-yellow" },
+  { icon: "🎰", title: "Tournez la roue", desc: "Et gagnez une récompense immédiate !", color: "bg-green" },
 ];
+
+const shadowMap = ["shadow-pop-pink", "shadow-pop-yellow", "shadow-pop-green"] as const;
 
 function Index() {
   const navigate = useNavigate();
@@ -58,26 +48,54 @@ function Index() {
   };
 
   return (
-    <main className="relative min-h-screen overflow-hidden">
-      {/* Decorative glow */}
-      <div className="pointer-events-none absolute -top-40 left-1/2 h-96 w-96 -translate-x-1/2 rounded-full bg-[#FFD700] opacity-20 blur-[120px]" />
-      <div className="pointer-events-none absolute bottom-0 right-0 h-80 w-80 rounded-full bg-purple-700 opacity-30 blur-[120px]" />
+    <main className="relative min-h-screen overflow-x-hidden">
+      {/* Floating decorations */}
+      <motion.div
+        animate={{ y: [0, -14, 0], rotate: [0, 8, 0] }}
+        transition={{ duration: 4, repeat: Infinity }}
+        className="pointer-events-none absolute left-4 top-24 text-4xl sm:left-10"
+      >
+        🎉
+      </motion.div>
+      <motion.div
+        animate={{ y: [0, 12, 0], rotate: [0, -10, 0] }}
+        transition={{ duration: 5, repeat: Infinity }}
+        className="pointer-events-none absolute right-6 top-32 text-4xl sm:right-16"
+      >
+        ⭐
+      </motion.div>
+      <motion.div
+        animate={{ y: [0, -10, 0] }}
+        transition={{ duration: 4.5, repeat: Infinity }}
+        className="pointer-events-none absolute bottom-32 left-8 text-4xl"
+      >
+        🍭
+      </motion.div>
 
-      <section className="relative mx-auto flex max-w-2xl flex-col items-center px-5 pt-16 pb-12 text-center sm:pt-24">
+      <section className="relative mx-auto flex max-w-2xl flex-col items-center px-5 pt-12 pb-10 text-center sm:pt-20">
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#FFD700]/30 bg-white/5 px-4 py-1.5 text-xs uppercase tracking-[0.2em] text-[#FFD700]"
+          initial={{ opacity: 0, y: -10, rotate: -4 }}
+          animate={{ opacity: 1, y: 0, rotate: -4 }}
+          transition={{ type: "spring", damping: 12 }}
+          className="ink-border mb-6 inline-block rounded-full bg-yellow px-5 py-2 text-xs font-extrabold uppercase tracking-widest shadow-pop-ink"
         >
-          ✨ Avis & récompenses
+          🎪 Avis & récompenses
         </motion.div>
 
         <motion.h1
-          initial={{ opacity: 0, scale: 0.9 }}
+          initial={{ opacity: 0, scale: 0.7 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.7, ease: "easeOut" }}
-          className="font-display text-shadow-gold text-6xl font-extrabold leading-none text-[#FFD700] sm:text-8xl"
+          transition={{ type: "spring", damping: 10, delay: 0.1 }}
+          className="font-display text-7xl font-extrabold leading-none sm:text-9xl"
+          style={{
+            background: "linear-gradient(110deg, #FF3DA6 0%, #FF6B00 50%, #00D26A 100%)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
+            WebkitTextStroke: "3px #1a1a1a",
+            paintOrder: "stroke fill",
+            filter: "drop-shadow(6px 6px 0 #1a1a1a)",
+          }}
         >
           ROLLSY
         </motion.h1>
@@ -85,61 +103,52 @@ function Index() {
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.6 }}
-          className="mt-6 font-display text-2xl font-bold text-white sm:text-3xl"
+          transition={{ delay: 0.3 }}
+          className="mt-8 font-display text-2xl font-extrabold sm:text-3xl"
         >
-          Laissez un avis et tentez votre chance !
+          Laissez un avis et tentez votre chance ! 🎲
         </motion.p>
 
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.6 }}
-          className="mt-3 max-w-md text-base text-white/70 sm:text-lg"
+          transition={{ delay: 0.4 }}
+          className="mt-3 max-w-md text-base font-semibold text-ink/80 sm:text-lg"
         >
-          Scannez, donnez votre avis, tournez la roue et gagnez une
-          récompense.
+          Scannez, donnez votre avis, tournez la roue et gagnez une récompense 🎁
         </motion.p>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.6 }}
-          className="mt-10 flex w-full flex-col gap-4"
+          transition={{ delay: 0.5 }}
+          className="mt-10 flex w-full flex-col gap-5"
         >
           <motion.button
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            animate={{
-              boxShadow: [
-                "0 0 30px rgba(255,215,0,0.35)",
-                "0 0 60px rgba(255,215,0,0.55)",
-                "0 0 30px rgba(255,215,0,0.35)",
-              ],
-            }}
-            transition={{
-              boxShadow: { duration: 2.4, repeat: Infinity },
-            }}
+            whileHover={{ scale: 1.05, rotate: -1, y: -3 }}
+            whileTap={{ scale: 0.95, y: 2 }}
+            animate={{ rotate: [-1, 1, -1] }}
+            transition={{ rotate: { duration: 3, repeat: Infinity, ease: "easeInOut" } }}
             onClick={handleReview}
-            className="min-h-[64px] w-full rounded-2xl bg-gradient-to-b from-[#FFE066] to-[#FFD700] px-6 text-lg font-bold uppercase tracking-wide text-[#1a0533] transition"
+            className="ink-border-thick min-h-[64px] w-full rounded-full bg-pink px-6 text-lg font-extrabold uppercase tracking-wide text-white shadow-pop-ink-lg transition"
           >
             Donner mon avis ⭐
           </motion.button>
 
           <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+            whileHover={{ scale: 1.04, rotate: 1, y: -2 }}
+            whileTap={{ scale: 0.96, y: 2 }}
             onClick={handleSpinAccess}
-            className="glass min-h-[56px] w-full rounded-2xl px-6 text-base font-semibold text-white transition hover:bg-white/10"
+            className="ink-border min-h-[60px] w-full rounded-full bg-yellow px-6 text-base font-extrabold uppercase text-ink shadow-pop-ink"
           >
-            J'ai déjà donné mon avis → Tourner la roue 🎰
+            J'ai déjà donné mon avis → Roue 🎰
           </motion.button>
 
           {warning && (
             <motion.p
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="rounded-xl border border-[#FFD700]/30 bg-[#FFD700]/10 px-4 py-3 text-sm text-[#FFD700]"
+              initial={{ opacity: 0, y: -8, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              className="ink-border rounded-2xl bg-orange px-4 py-3 text-sm font-extrabold text-white shadow-pop-ink"
             >
               {warning}
             </motion.p>
@@ -147,33 +156,36 @@ function Index() {
         </motion.div>
       </section>
 
-      <section className="relative mx-auto max-w-4xl px-5 pb-20">
-        <h2 className="mb-8 text-center font-display text-2xl font-bold text-white sm:text-3xl">
-          Comment ça marche
+      <section className="relative mx-auto max-w-4xl px-5 pb-16">
+        <h2 className="mb-10 text-center font-display text-3xl font-extrabold sm:text-4xl">
+          Comment ça marche ? 🤔
         </h2>
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-3">
           {steps.map((s, i) => (
             <motion.div
               key={s.title}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, y: 30, rotate: i % 2 === 0 ? -3 : 3 }}
+              whileInView={{ opacity: 1, y: 0, rotate: i % 2 === 0 ? -2 : 2 }}
+              whileHover={{ rotate: 0, scale: 1.04, y: -4 }}
               viewport={{ once: true }}
-              transition={{ delay: i * 0.15, duration: 0.5 }}
-              className="glass rounded-2xl p-6 text-center"
+              transition={{ delay: i * 0.12, type: "spring", damping: 12 }}
+              className={`ink-border-thick rounded-3xl bg-white p-6 text-center ${shadowMap[i]}`}
             >
-              <div className="mb-3 text-5xl">{s.icon}</div>
-              <div className="mb-2 font-display text-lg font-bold text-[#FFD700]">
-                {i + 1}. {s.title}
+              <div className="mb-3 text-6xl">{s.icon}</div>
+              <div className={`ink-border mx-auto mb-3 inline-block rounded-full px-3 py-1 text-xs font-extrabold ${s.color} ${s.color === "bg-yellow" ? "text-ink" : "text-white"}`}>
+                ÉTAPE {i + 1}
               </div>
-              <p className="text-sm text-white/70">{s.desc}</p>
+              <div className="mb-2 font-display text-xl font-extrabold">
+                {s.title}
+              </div>
+              <p className="text-sm font-semibold text-ink/70">{s.desc}</p>
             </motion.div>
           ))}
         </div>
       </section>
 
-      <footer className="border-t border-white/5 py-6 text-center text-xs text-white/50">
-        Powered by <span className="font-semibold text-[#FFD700]">ROLLSY</span>{" "}
-        — La solution avis & fidélité pour les commerçants
+      <footer className="ink-border-thick mx-4 mb-6 rounded-3xl bg-white px-6 py-5 text-center text-sm font-bold shadow-pop-pink sm:mx-auto sm:max-w-2xl">
+        Powered by <span className="text-pink" style={{ color: "#FF3DA6" }}>ROLLSY</span> 🎪 — La solution avis & fidélité pour les commerçants
       </footer>
     </main>
   );
