@@ -78,7 +78,8 @@ function RouePage() {
       const end = (i + 1) * SEG_ANGLE;
       return `${s.color} ${start}deg ${end}deg`;
     }).join(", ");
-    return `conic-gradient(from -90deg, ${stops})`;
+    // from 0deg => segment 0 starts at top (12 o'clock), goes clockwise
+    return `conic-gradient(from 0deg, ${stops})`;
   }, []);
 
   const handleSpin = () => {
