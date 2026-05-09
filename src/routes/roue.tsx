@@ -327,10 +327,14 @@ function RouePage() {
                     </span>
                   </div>
                   <p className="mt-6 text-sm font-semibold text-ink/80">
-                    Montrez ce message à notre équipe pour profiter de votre récompense 🙌
+                    📸 <strong>Faites une capture d'écran</strong> de cette récompense.
                   </p>
-                  <div className="ink-border mt-3 inline-block rounded-full bg-orange px-3 py-1 text-xs font-extrabold uppercase text-white">
-                    Valable aujourd'hui uniquement
+                  <p className="mt-2 text-sm font-semibold text-ink/80">
+                    Elle est utilisable <strong>lors de votre prochaine visite</strong>,
+                    sur présentation de la capture d'écran à notre équipe 🙌
+                  </p>
+                  <div className="ink-border mt-4 inline-block rounded-full bg-orange px-4 py-1.5 text-xs font-extrabold uppercase text-white">
+                    À conserver précieusement 🔒
                   </div>
                   <button
                     onClick={() => {
