@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 
 const GOOGLE_REVIEW_URL =
-  "https://www.google.com/search?sca_esv=e6882076cd0c0955&rlz=1C1HKFL_frFR1200FR1204&sxsrf=ANbL-n4eccJrJU3vQNJpFuHr-mKfwp1ktQ:1778342859991&si=AL3DRZEsmMGCryMMFSHJ3StBhOdZ2-6yYkXd_doETEE1OR-qOQ--0hAfI9iGs-PYfBVPpCdYPJMRc_v5K6Op4sA5P6uQCvtzvH1SDobGh3plgsYc9Y01rYjMfN8qBIV69uHKUzh2REgA&q=La+Gamelle+Avis&sa=X&ved=2ahUKEwizsNWzy6yUAxUKUqQEHewWCrwQ0bkNegQIKhAF&biw=1280&bih=585&dpr=1.5";
+  "https://g.page/r/Ceklyn43u5YKEAE/review";
 
 export const Route = createFileRoute("/")({
   head: () => ({
