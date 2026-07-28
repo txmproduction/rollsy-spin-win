@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
 import confetti from "canvas-confetti";
 import { supabase } from "@/integrations/supabase/client";
+import { createClientContact, spinWheel } from "@/lib/rollsy.functions";
 
 export const Route = createFileRoute("/roue")({
   head: () => ({
@@ -32,32 +33,10 @@ const EMOJIS = ["🍗", "🥤", "💸", "🎁"];
 
 // Poids relatif de "Perdu" face aux lots encore disponibles — ajuste ce chiffre pour rendre le jeu
 // plus ou moins généreux (plus haut = moins de gains). Pourra être déplacé dans `settings` plus tard.
-const LOSE_WEIGHT = 5;
 
-function generateCode(): string {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let out = "TXM-";
-  for (let i = 0; i < 5; i++) out += chars[Math.floor(Math.random() * chars.length)];
-  return out;
-}
 
-function isMorning(): boolean {
-  return new Date().getHours() < 13;
-}
 
-function startOfDayISO(): string {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d.toISOString();
-}
 
-function startOfWeekISO(): string {
-  const d = new Date();
-  const day = (d.getDay() + 6) % 7; // lundi = 0
-  d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() - day);
-  return d.toISOString();
-}
 
 function fireConfetti() {
   const burst = (opts: confetti.Options) =>
@@ -138,84 +117,15 @@ function RouePage() {
     return `conic-gradient(${stops})`;
   }, [segments, segAngle]);
 
-  // Détermine les lots encore disponibles sur leur période (jour/semaine, + créneau matin/après-midi pour les lots journaliers multi-quota)
-  async function getEligibleRewards(): Promise<Reward[]> {
-    const dayStart = startOfDayISO();
-    const weekStart = startOfWeekISO();
-    const eligible: Reward[] = [];
-
-    for (const r of rewards) {
-      const periodStart = r.frequency === "week" ? weekStart : dayStart;
-      const { count } = await supabase
-        .from("spins")
-        .select("id", { count: "exact", head: true })
-        .eq("reward_id", r.id)
-        .eq("result", "win")
-        .gte("created_at", periodStart);
-
-      const won = count || 0;
-
-      if (r.frequency === "day" && r.quota_morning != null && r.quota_afternoon != null) {
-        // Compte séparément les gains du créneau en cours (matin/après-midi)
-        const slotStart = new Date();
-        if (isMorning()) {
-          slotStart.setHours(0, 0, 0, 0);
-        } else {
-          slotStart.setHours(13, 0, 0, 0);
-        }
-        const { count: slotCount } = await supabase
-          .from("spins")
-          .select("id", { count: "exact", head: true })
-          .eq("reward_id", r.id)
-          .eq("result", "win")
-          .gte("created_at", slotStart.toISOString());
-        const slotQuota = isMorning() ? r.quota_morning : r.quota_afternoon;
-        if ((slotCount || 0) < slotQuota) eligible.push(r);
-      } else if (won < r.quota) {
-        eligible.push(r);
-      }
-    }
-    return eligible;
-  }
-
-  async function lastSpinWasWin(): Promise<boolean> {
-    const { data } = await supabase
-      .from("spins")
-      .select("result")
-      .order("created_at", { ascending: false })
-      .limit(1);
-    return data?.[0]?.result === "win";
-  }
-
-  async function decideOutcome(): Promise<Segment> {
-    const noRepeat = await lastSpinWasWin();
-    const eligible = noRepeat ? [] : await getEligibleRewards();
-
-    if (eligible.length === 0) return LOSE_SEGMENT;
-
-    // Tirage pondéré : chaque lot dispo a un poids de 1, "Perdu" a un poids fixe (LOSE_WEIGHT)
-    const total = eligible.length + LOSE_WEIGHT;
-    let r = Math.random() * total;
-    for (const rew of eligible) {
-      r -= 1;
-      if (r <= 0) {
-        const seg = segments.find((s) => s.rewardId === rew.id);
-        return seg || LOSE_SEGMENT;
-      }
-    }
-    return LOSE_SEGMENT;
-  }
-
   async function saveContact() {
     if (!name.trim() || !phone.trim()) return;
-    const { data } = await supabase
-      .from("clients")
-      .insert({ name: name.trim(), phone: phone.trim() })
-      .select("id")
-      .single();
-    if (data?.id) {
-      localStorage.setItem("rollsy_client_id", data.id);
+    try {
+      const { id } = await createClientContact({ data: { name: name.trim(), phone: phone.trim() } });
+      localStorage.setItem("rollsy_client_id", id);
       setContactSaved(true);
+    } catch {
+      // message générique — les détails restent côté serveur
+      alert("Impossible d'enregistrer vos informations, réessayez.");
     }
   }
 
@@ -223,7 +133,11 @@ function RouePage() {
     if (spinning || alreadySpun || !contactSaved) return;
     setSpinning(true);
 
-    const outcome = await decideOutcome();
+    const clientId = localStorage.getItem("rollsy_client_id");
+    const { rewardId, code } = await spinWheel({
+      data: { clientId: clientId && /^[0-9a-f-]{36}$/i.test(clientId) ? clientId : null },
+    });
+    const outcome: Segment = segments.find((s) => s.rewardId === rewardId) ?? LOSE_SEGMENT;
     const foundIdx = segments.findIndex((s) => s.rewardId === outcome.rewardId && s.label === outcome.label);
     const idx = foundIdx >= 0 ? foundIdx : segments.length - 1;
     // Le conic-gradient démarre à 12h et tourne dans le sens horaire :
@@ -248,20 +162,10 @@ function RouePage() {
       }
 
 
-      const clientId = localStorage.getItem("rollsy_client_id");
-      let code: string | null = null;
       if (outcome.rewardId) {
-        code = generateCode();
         setWinCode(code);
         fireConfetti();
       }
-
-      await supabase.from("spins").insert({
-        client_id: clientId,
-        reward_id: outcome.rewardId,
-        result: outcome.rewardId ? "win" : "lose",
-        code,
-      });
     }, 4200);
   }
 
