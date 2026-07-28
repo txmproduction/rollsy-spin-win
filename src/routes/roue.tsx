@@ -338,7 +338,7 @@ function RouePage() {
             </div>
           </div>
 
-          {!alreadySpun ? (
+          {!alreadySpun && (
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={handleSpin}
@@ -347,23 +347,25 @@ function RouePage() {
             >
               {spinning ? "🎰 Ça tourne..." : "Tourner la roue 🎉"}
             </motion.button>
-          ) : (
-            <AnimatePresence>
-              {result && (
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center">
-                  {result.rewardId ? (
-                    <>
-                      <p className="font-display text-2xl font-extrabold text-pink">Gagné : {result.label} 🎉</p>
-                      <p className="mt-2 text-lg font-bold">Code à présenter en caisse : {winCode}</p>
-                      <p className="text-sm text-ink/60">À utiliser lors de votre prochain achat.</p>
-                    </>
-                  ) : (
-                    <p className="font-display text-2xl font-extrabold">Perdu, retentez votre chance demain 😉</p>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
           )}
+          <AnimatePresence>
+            {result && !spinning && (
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center">
+                {result.rewardId ? (
+                  <>
+                    <p className="font-display text-2xl font-extrabold text-pink">Gagné : {result.label} 🎉</p>
+                    <p className="mt-2 text-lg font-bold">Code à présenter en caisse : {winCode}</p>
+                    <p className="text-sm text-ink/60">À utiliser lors de votre prochain achat.</p>
+                  </>
+                ) : (
+                  <p className="font-display text-2xl font-extrabold">
+                    {alreadySpun ? "Perdu, retentez votre chance demain 😉" : "Perdu ! Retente un tour 🔁"}
+                  </p>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
         </>
       )}
     </main>
