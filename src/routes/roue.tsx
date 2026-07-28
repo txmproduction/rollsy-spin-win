@@ -91,20 +91,27 @@ function RouePage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (localStorage.getItem("hasReviewed") !== "true") {
-      navigate({ to: "/" });
-      return;
-    }
-    // Réinitialise le blocage après 24h
-    const spunAt = Number(localStorage.getItem("spunAt") || 0);
-    if (localStorage.getItem("hasSpun") === "true") {
-      if (spunAt && Date.now() - spunAt > 24 * 60 * 60 * 1000) {
-        localStorage.removeItem("hasSpun");
-        localStorage.removeItem("spunAt");
-      } else {
-        setAlreadySpun(true);
+    if (isPreviewEnv()) {
+      // Mode test : on efface les blocages pour pouvoir rejouer à l'infini
+      localStorage.removeItem("hasSpun");
+      localStorage.removeItem("spunAt");
+    } else {
+      if (localStorage.getItem("hasReviewed") !== "true") {
+        navigate({ to: "/" });
+        return;
+      }
+      // Réinitialise le blocage après 24h
+      const spunAt = Number(localStorage.getItem("spunAt") || 0);
+      if (localStorage.getItem("hasSpun") === "true") {
+        if (spunAt && Date.now() - spunAt > 24 * 60 * 60 * 1000) {
+          localStorage.removeItem("hasSpun");
+          localStorage.removeItem("spunAt");
+        } else {
+          setAlreadySpun(true);
+        }
       }
     }
+
 
     (async () => {
       const { data } = await supabase.from("rewards").select("*").eq("active", true);
