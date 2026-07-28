@@ -238,9 +238,12 @@ function RouePage() {
     setTimeout(async () => {
       setResult(outcome);
       setSpinning(false);
-      localStorage.setItem("hasSpun", "true");
-      localStorage.setItem("spunAt", String(Date.now()));
-      setAlreadySpun(true);
+      if (!isPreviewEnv()) {
+        localStorage.setItem("hasSpun", "true");
+        localStorage.setItem("spunAt", String(Date.now()));
+        setAlreadySpun(true);
+      }
+
 
       const clientId = localStorage.getItem("rollsy_client_id");
       let code: string | null = null;
