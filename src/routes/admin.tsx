@@ -274,11 +274,12 @@ function AdminPage() {
             </h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="ink-border rounded-2xl bg-yellow p-4 text-center">
-                <div className="font-display text-4xl font-extrabold">{stats.spins}</div>
+                <div className="font-display text-4xl font-extrabold">{stats.todaySpins}</div>
                 <div className="text-xs font-extrabold uppercase">🎰 Tours</div>
               </div>
               <div className="ink-border rounded-2xl bg-pink p-4 text-center text-white">
-                <div className="font-display text-4xl font-extrabold">{stats.rewards}</div>
+                <div className="font-display text-4xl font-extrabold">{stats.todayWins}</div>
+
                 <div className="text-xs font-extrabold uppercase">🎁 Gains</div>
               </div>
             </div>
