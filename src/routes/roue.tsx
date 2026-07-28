@@ -212,7 +212,12 @@ function RouePage() {
     const idx = segments.findIndex((s) => s.rewardId === outcome.rewardId && s.label === outcome.label);
     const targetAngle = idx * segAngle + segAngle / 2;
     const spins = 5; // tours complets pour l'effet visuel
-    const finalRotation = rotation + spins * 360 + (360 - targetAngle);
+    // La roue peut déjà être dans une position quelconque (accumulée des tours précédents) —
+    // on calcule le delta nécessaire à partir de sa position ACTUELLE, pas depuis 0.
+    const currentMod = ((rotation % 360) + 360) % 360;
+    const desiredMod = ((360 - targetAngle) % 360 + 360) % 360;
+    const delta = ((desiredMod - currentMod) % 360 + 360) % 360;
+    const finalRotation = rotation + spins * 360 + delta;
     setRotation(finalRotation);
 
     setTimeout(async () => {
