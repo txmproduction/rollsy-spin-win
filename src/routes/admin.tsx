@@ -1,7 +1,46 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { QRCodeCanvas } from "qrcode.react";
 import { motion } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
+
+type Spin = {
+  id: string;
+  client_id: string | null;
+  reward_id: string | null;
+  result: string;
+  created_at: string;
+};
+type Reward = {
+  id: string;
+  name: string;
+  short_label: string | null;
+  frequency: string;
+  quota: number;
+};
+type Client = {
+  id: string;
+  name: string | null;
+  phone: string | null;
+  email: string | null;
+  created_at: string;
+};
+
+function startOfToday() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+function startOfWeek() {
+  const d = startOfToday();
+  const day = (d.getDay() + 6) % 7; // lundi = 0
+  d.setDate(d.getDate() - day);
+  return d;
+}
+function csvCell(v: unknown) {
+  const s = v == null ? "" : String(v);
+  return `"${s.replace(/"/g, '""')}"`;
+}
 
 const PASSWORD = "rollsy2024";
 const GOOGLE_REVIEW_URL = "https://www.google.com/search?q=La+Gamelle+Avis";
@@ -22,7 +61,10 @@ function AdminPage() {
   const [pwd, setPwd] = useState("");
   const [error, setError] = useState("");
   const [appUrl, setAppUrl] = useState("");
-  const [stats, setStats] = useState({ spins: 0, rewards: 0 });
+  const [spins, setSpins] = useState<Spin[]>([]);
+  const [rewards, setRewards] = useState<Reward[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(false);
   const qrWrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -33,11 +75,79 @@ function AdminPage() {
 
   useEffect(() => {
     if (!unlocked) return;
-    const today = new Date().toISOString().slice(0, 10);
-    const raw = localStorage.getItem("rollsy_stats");
-    const all = raw ? JSON.parse(raw) : {};
-    setStats(all[today] || { spins: 0, rewards: 0 });
+    setLoading(true);
+    (async () => {
+      const [s, r, c] = await Promise.all([
+        supabase.from("spins").select("*").order("created_at", { ascending: false }),
+        supabase.from("rewards").select("*"),
+        supabase.from("clients").select("*").order("created_at", { ascending: false }),
+      ]);
+      setSpins((s.data as Spin[]) || []);
+      setRewards((r.data as Reward[]) || []);
+      setClients((c.data as Client[]) || []);
+      setLoading(false);
+    })();
   }, [unlocked]);
+
+  const stats = useMemo(() => {
+    const todayStart = startOfToday().getTime();
+    const weekStart = startOfWeek().getTime();
+    const wins = spins.filter((s) => s.result === "win");
+    const todaySpins = spins.filter((s) => new Date(s.created_at).getTime() >= todayStart);
+    const rewardName = (id: string | null) =>
+      rewards.find((r) => r.id === id)?.name ?? "Sans lot";
+
+    const byReward = new Map<string, number>();
+    for (const w of wins) {
+      const key = rewardName(w.reward_id);
+      byReward.set(key, (byReward.get(key) || 0) + 1);
+    }
+
+    const chicken = rewards.find((r) => /ailes de poulet/i.test(r.name));
+    const chickenWeek = chicken
+      ? wins.filter(
+          (w) => w.reward_id === chicken.id && new Date(w.created_at).getTime() >= weekStart,
+        ).length
+      : 0;
+
+    return {
+      totalSpins: spins.length,
+      totalWins: wins.length,
+      todaySpins: todaySpins.length,
+      todayWins: todaySpins.filter((s) => s.result === "win").length,
+      byReward: [...byReward.entries()].sort((a, b) => b[1] - a[1]),
+      chicken,
+      chickenWeek,
+    };
+  }, [spins, rewards]);
+
+  const exportClientsCsv = () => {
+    const rewardName = (id: string | null) =>
+      rewards.find((r) => r.id === id)?.name ?? "Sans lot";
+    const header = ["Nom", "Téléphone", "Email", "Date d'inscription", "Participations", "Gains", "Lots gagnés"];
+    const rows = clients.map((c) => {
+      const mine = spins.filter((s) => s.client_id === c.id);
+      const wins = mine.filter((s) => s.result === "win");
+      return [
+        c.name,
+        c.phone,
+        c.email,
+        new Date(c.created_at).toLocaleString("fr-FR"),
+        mine.length,
+        wins.length,
+        wins.map((w) => rewardName(w.reward_id)).join(" | "),
+      ];
+    });
+    const csv = [header, ...rows].map((r) => r.map(csvCell).join(";")).join("\r\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `rollsy-clients-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+
+
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -164,11 +274,12 @@ function AdminPage() {
             </h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="ink-border rounded-2xl bg-yellow p-4 text-center">
-                <div className="font-display text-4xl font-extrabold">{stats.spins}</div>
+                <div className="font-display text-4xl font-extrabold">{stats.todaySpins}</div>
                 <div className="text-xs font-extrabold uppercase">🎰 Tours</div>
               </div>
               <div className="ink-border rounded-2xl bg-pink p-4 text-center text-white">
-                <div className="font-display text-4xl font-extrabold">{stats.rewards}</div>
+                <div className="font-display text-4xl font-extrabold">{stats.todayWins}</div>
+
                 <div className="text-xs font-extrabold uppercase">🎁 Gains</div>
               </div>
             </div>
@@ -185,6 +296,77 @@ function AdminPage() {
           </button>
         </div>
       </div>
+
+      <section className="mt-10 space-y-6">
+        <h2 className="font-display text-2xl font-extrabold">
+          📈 Statistiques globales {loading && <span className="text-base">⏳</span>}
+        </h2>
+
+        <div className="grid gap-6 sm:grid-cols-2">
+          <div className="ink-border-thick rounded-3xl bg-yellow p-6 text-center shadow-pop-ink">
+            <div className="font-display text-5xl font-extrabold">{stats.totalSpins}</div>
+            <div className="mt-1 text-xs font-extrabold uppercase tracking-widest">
+              🎰 Tours joués (total)
+            </div>
+          </div>
+          <div className="ink-border-thick rounded-3xl bg-pink p-6 text-center text-white shadow-pop-ink">
+            <div className="font-display text-5xl font-extrabold">{stats.totalWins}</div>
+            <div className="mt-1 text-xs font-extrabold uppercase tracking-widest">
+              🎁 Gains (total)
+            </div>
+          </div>
+        </div>
+
+        <div className="ink-border-thick rounded-3xl bg-white p-6 shadow-pop-pink">
+          <h3 className="mb-4 text-xs font-extrabold uppercase tracking-widest text-ink/60">
+            🏆 Répartition des gains par lot
+          </h3>
+          {stats.byReward.length === 0 ? (
+            <p className="text-sm font-bold text-ink/50">Aucun gain enregistré pour l'instant.</p>
+          ) : (
+            <ul className="space-y-3">
+              {stats.byReward.map(([name, count]) => (
+                <li
+                  key={name}
+                  className="ink-border flex items-center justify-between rounded-2xl bg-green/30 px-4 py-3"
+                >
+                  <span className="font-extrabold">{name}</span>
+                  <span className="font-display text-xl font-extrabold">{count}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {stats.chicken && (
+          <div className="ink-border-thick rounded-3xl bg-white p-6 shadow-pop-orange">
+            <h3 className="mb-2 text-xs font-extrabold uppercase tracking-widest text-ink/60">
+              🍗 {stats.chicken.name} — cette semaine
+            </h3>
+            <p className="font-display text-3xl font-extrabold">
+              {stats.chickenWeek}/{stats.chicken.quota} déjà gagné cette semaine
+            </p>
+            <p className="mt-1 text-sm font-bold text-ink/60">
+              Quota restant : {Math.max(0, stats.chicken.quota - stats.chickenWeek)}
+            </p>
+          </div>
+        )}
+
+        <div className="ink-border-thick rounded-3xl bg-white p-6 shadow-pop-ink">
+          <h3 className="mb-3 text-xs font-extrabold uppercase tracking-widest text-ink/60">
+            👥 Clients ({clients.length})
+          </h3>
+          <motion.button
+            whileHover={{ scale: 1.03, y: -2 }}
+            whileTap={{ scale: 0.97, y: 2 }}
+            onClick={exportClientsCsv}
+            className="ink-border-thick min-h-[52px] w-full rounded-full bg-green px-5 font-extrabold uppercase shadow-pop-ink"
+          >
+            ⬇️ Exporter les clients en CSV
+          </motion.button>
+        </div>
+      </section>
     </main>
+
   );
 }
