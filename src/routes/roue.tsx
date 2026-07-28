@@ -1,7 +1,8 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
 import confetti from "canvas-confetti";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/roue")({
   head: () => ({
@@ -13,34 +14,54 @@ export const Route = createFileRoute("/roue")({
   component: RouePage,
 });
 
-type Segment = { label: string; short: string; color: string; weight: number; emoji: string };
+type Reward = {
+  id: string;
+  name: string;
+  short_label: string;
+  frequency: "day" | "week";
+  quota: number;
+  quota_morning: number | null;
+  quota_afternoon: number | null;
+};
 
-const SEGMENTS: Segment[] = [
-  { label: "20% de réduction", short: "-20%",   color: "#FF3DA6", weight: 20, emoji: "💸" },
-  { label: "Dessert offert",   short: "Dessert", color: "#FFE600", weight: 15, emoji: "🍰" },
-  { label: "Boisson offerte",  short: "Boisson", color: "#00D26A", weight: 15, emoji: "🥤" },
-  { label: "Menu offert",      short: "MENU !",  color: "#FF6B00", weight: 5,  emoji: "🍽️" },
-  { label: "Essaie encore !",  short: "Réessaie", color: "#A855F7", weight: 30, emoji: "🔁" },
-  { label: "10% de réduction", short: "-10%",   color: "#00B4FF", weight: 15, emoji: "🎁" },
-];
+type Segment = { rewardId: string | null; label: string; short: string; color: string; emoji: string };
 
-const SEG_ANGLE = 360 / SEGMENTS.length;
-const DAY_MS = 24 * 60 * 60 * 1000;
-const CONFETTI_COLORS = ["#FF3DA6", "#FFE600", "#00D26A", "#FF6B00"];
+const LOSE_SEGMENT: Segment = { rewardId: null, label: "Perdu", short: "Perdu", color: "#A855F7", emoji: "🔁" };
+const COLORS = ["#FF3DA6", "#FFE600", "#00D26A", "#00B4FF", "#FF6B00"];
+const EMOJIS = ["🍗", "🥤", "💸", "🎁"];
 
-function pickWeighted(): number {
-  const total = SEGMENTS.reduce((s, x) => s + x.weight, 0);
-  let r = Math.random() * total;
-  for (let i = 0; i < SEGMENTS.length; i++) {
-    r -= SEGMENTS[i].weight;
-    if (r <= 0) return i;
-  }
-  return SEGMENTS.length - 1;
+// Poids relatif de "Perdu" face aux lots encore disponibles — ajuste ce chiffre pour rendre le jeu
+// plus ou moins généreux (plus haut = moins de gains). Pourra être déplacé dans `settings` plus tard.
+const LOSE_WEIGHT = 5;
+
+function generateCode(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let out = "TXM-";
+  for (let i = 0; i < 5; i++) out += chars[Math.floor(Math.random() * chars.length)];
+  return out;
+}
+
+function isMorning(): boolean {
+  return new Date().getHours() < 13;
+}
+
+function startOfDayISO(): string {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d.toISOString();
+}
+
+function startOfWeekISO(): string {
+  const d = new Date();
+  const day = (d.getDay() + 6) % 7; // lundi = 0
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - day);
+  return d.toISOString();
 }
 
 function fireConfetti() {
   const burst = (opts: confetti.Options) =>
-    confetti({ particleCount: 90, spread: 75, colors: CONFETTI_COLORS, ...opts });
+    confetti({ particleCount: 90, spread: 75, colors: COLORS, ...opts });
   burst({ origin: { x: 0.2, y: 0.6 }, angle: 60 });
   burst({ origin: { x: 0.8, y: 0.6 }, angle: 120 });
   setTimeout(() => burst({ origin: { x: 0.5, y: 0.3 }, particleCount: 160, spread: 110 }), 250);
@@ -49,11 +70,15 @@ function fireConfetti() {
 function RouePage() {
   const navigate = useNavigate();
   const [ready, setReady] = useState(false);
+  const [rewards, setRewards] = useState<Reward[]>([]);
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [contactSaved, setContactSaved] = useState(false);
   const [alreadySpun, setAlreadySpun] = useState(false);
-  const [previousReward, setPreviousReward] = useState<string | null>(null);
   const [rotation, setRotation] = useState(0);
   const [spinning, setSpinning] = useState(false);
   const [result, setResult] = useState<Segment | null>(null);
+  const [winCode, setWinCode] = useState<string | null>(null);
   const wheelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -62,311 +87,224 @@ function RouePage() {
       navigate({ to: "/" });
       return;
     }
-    const spunAt = Number(localStorage.getItem("spunAt") || 0);
-    if (localStorage.getItem("hasSpun") === "true" && Date.now() - spunAt < DAY_MS) {
+    if (localStorage.getItem("hasSpun") === "true") {
       setAlreadySpun(true);
-      setPreviousReward(localStorage.getItem("reward"));
-    } else if (spunAt && Date.now() - spunAt >= DAY_MS) {
-      localStorage.removeItem("hasSpun");
     }
-    setReady(true);
+    (async () => {
+      const { data } = await supabase.from("rewards").select("*").eq("active", true);
+      setRewards((data as Reward[]) || []);
+      setReady(true);
+    })();
   }, [navigate]);
 
-  const conicGradient = useMemo(() => {
-    const stops = SEGMENTS.map((s, i) => {
-      const start = i * SEG_ANGLE;
-      const end = (i + 1) * SEG_ANGLE;
-      return `${s.color} ${start}deg ${end}deg`;
-    }).join(", ");
-    return `conic-gradient(from -90deg, ${stops})`;
-  }, []);
+  const segments: Segment[] = useMemo(() => {
+    const rewardSegments = rewards.map((r, i) => ({
+      rewardId: r.id,
+      label: r.name,
+      short: r.short_label,
+      color: COLORS[i % COLORS.length],
+      emoji: EMOJIS[i % EMOJIS.length],
+    }));
+    return [...rewardSegments, LOSE_SEGMENT];
+  }, [rewards]);
 
-  const handleSpin = () => {
-    if (spinning) return;
-    const idx = pickWeighted();
-    const center = idx * SEG_ANGLE + SEG_ANGLE / 2;
-    const turns = 6;
-    const target = turns * 360 - center + (Math.random() * 6 - 3);
-    const final = rotation + target;
+  const segAngle = 360 / (segments.length || 1);
+
+  const conicGradient = useMemo(() => {
+    const stops = segments.map((s, i) => `${s.color} ${i * segAngle}deg ${(i + 1) * segAngle}deg`).join(", ");
+    return `conic-gradient(${stops})`;
+  }, [segments, segAngle]);
+
+  // Détermine les lots encore disponibles sur leur période (jour/semaine, + créneau matin/après-midi pour les lots journaliers multi-quota)
+  async function getEligibleRewards(): Promise<Reward[]> {
+    const dayStart = startOfDayISO();
+    const weekStart = startOfWeekISO();
+    const eligible: Reward[] = [];
+
+    for (const r of rewards) {
+      const periodStart = r.frequency === "week" ? weekStart : dayStart;
+      const { count } = await supabase
+        .from("spins")
+        .select("id", { count: "exact", head: true })
+        .eq("reward_id", r.id)
+        .eq("result", "win")
+        .gte("created_at", periodStart);
+
+      const won = count || 0;
+
+      if (r.frequency === "day" && r.quota_morning != null && r.quota_afternoon != null) {
+        // Compte séparément les gains du créneau en cours (matin/après-midi)
+        const slotStart = new Date();
+        if (isMorning()) {
+          slotStart.setHours(0, 0, 0, 0);
+        } else {
+          slotStart.setHours(13, 0, 0, 0);
+        }
+        const { count: slotCount } = await supabase
+          .from("spins")
+          .select("id", { count: "exact", head: true })
+          .eq("reward_id", r.id)
+          .eq("result", "win")
+          .gte("created_at", slotStart.toISOString());
+        const slotQuota = isMorning() ? r.quota_morning : r.quota_afternoon;
+        if ((slotCount || 0) < slotQuota) eligible.push(r);
+      } else if (won < r.quota) {
+        eligible.push(r);
+      }
+    }
+    return eligible;
+  }
+
+  async function lastSpinWasWin(): Promise<boolean> {
+    const { data } = await supabase
+      .from("spins")
+      .select("result")
+      .order("created_at", { ascending: false })
+      .limit(1);
+    return data?.[0]?.result === "win";
+  }
+
+  async function decideOutcome(): Promise<Segment> {
+    const noRepeat = await lastSpinWasWin();
+    const eligible = noRepeat ? [] : await getEligibleRewards();
+
+    if (eligible.length === 0) return LOSE_SEGMENT;
+
+    // Tirage pondéré : chaque lot dispo a un poids de 1, "Perdu" a un poids fixe (LOSE_WEIGHT)
+    const total = eligible.length + LOSE_WEIGHT;
+    let r = Math.random() * total;
+    for (const rew of eligible) {
+      r -= 1;
+      if (r <= 0) {
+        const seg = segments.find((s) => s.rewardId === rew.id);
+        return seg || LOSE_SEGMENT;
+      }
+    }
+    return LOSE_SEGMENT;
+  }
+
+  async function saveContact() {
+    if (!name.trim() || !phone.trim()) return;
+    const { data } = await supabase
+      .from("clients")
+      .insert({ name: name.trim(), phone: phone.trim() })
+      .select("id")
+      .single();
+    if (data?.id) {
+      localStorage.setItem("rollsy_client_id", data.id);
+      setContactSaved(true);
+    }
+  }
+
+  async function handleSpin() {
+    if (spinning || alreadySpun || !contactSaved) return;
     setSpinning(true);
-    setResult(null);
-    setRotation(final);
-    window.setTimeout(() => {
-      const seg = SEGMENTS[idx];
-      setResult(seg);
+
+    const outcome = await decideOutcome();
+    const idx = segments.findIndex((s) => s.rewardId === outcome.rewardId && s.label === outcome.label);
+    const targetAngle = idx * segAngle + segAngle / 2;
+    const spins = 5; // tours complets pour l'effet visuel
+    const finalRotation = rotation + spins * 360 + (360 - targetAngle);
+    setRotation(finalRotation);
+
+    setTimeout(async () => {
+      setResult(outcome);
       setSpinning(false);
       localStorage.setItem("hasSpun", "true");
-      localStorage.setItem("reward", seg.label);
       localStorage.setItem("spunAt", String(Date.now()));
-      const today = new Date().toISOString().slice(0, 10);
-      const statsRaw = localStorage.getItem("rollsy_stats");
-      const stats = statsRaw ? JSON.parse(statsRaw) : {};
-      const day = stats[today] || { spins: 0, rewards: 0 };
-      day.spins += 1;
-      if (seg.label !== "Essaie encore !") day.rewards += 1;
-      stats[today] = day;
-      localStorage.setItem("rollsy_stats", JSON.stringify(stats));
-      if (seg.label !== "Essaie encore !") fireConfetti();
-    }, 4500);
-  };
+      setAlreadySpun(true);
 
-  if (!ready) {
-    return (
-      <main className="flex min-h-screen items-center justify-center font-bold text-ink/70">
-        Chargement…
-      </main>
-    );
+      const clientId = localStorage.getItem("rollsy_client_id");
+      let code: string | null = null;
+      if (outcome.rewardId) {
+        code = generateCode();
+        setWinCode(code);
+        fireConfetti();
+      }
+
+      await supabase.from("spins").insert({
+        client_id: clientId,
+        reward_id: outcome.rewardId,
+        result: outcome.rewardId ? "win" : "lose",
+        code,
+      });
+    }, 4200);
   }
 
-  if (alreadySpun) {
-    return (
-      <main className="flex min-h-screen flex-col items-center justify-center px-5 text-center">
-        <div className="ink-border-thick max-w-md rounded-3xl bg-white p-8 shadow-pop-pink">
-          <div className="mb-4 text-7xl">⏳</div>
-          <h1 className="mb-3 font-display text-2xl font-extrabold">
-            Vous avez déjà tourné aujourd'hui !
-          </h1>
-          {previousReward && previousReward !== "Essaie encore !" && (
-            <div className="ink-border mx-auto mb-4 inline-block rounded-full bg-yellow px-4 py-2 text-sm font-extrabold shadow-pop-ink">
-              🎁 {previousReward}
-            </div>
-          )}
-          <p className="mb-6 text-sm font-semibold text-ink/70">
-            Revenez après votre prochain avis 😊
-          </p>
-          <Link
-            to="/"
-            className="ink-border-thick inline-flex min-h-[56px] items-center justify-center rounded-full bg-pink px-6 text-base font-extrabold uppercase text-white shadow-pop-ink"
-          >
-            ← Retour
-          </Link>
-        </div>
-      </main>
-    );
-  }
+  if (!ready) return null;
 
   return (
-    <main className="relative flex min-h-screen flex-col items-center px-4 py-8">
-      <Link
-        to="/"
-        className="ink-border mb-6 self-start rounded-full bg-white px-4 py-2 text-xs font-extrabold uppercase shadow-pop-ink"
-      >
-        ← Accueil
-      </Link>
-
-      <motion.h1
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ type: "spring", damping: 10 }}
-        className="text-center font-display text-4xl font-extrabold sm:text-5xl"
-        style={{
-          color: "#FF3DA6",
-          WebkitTextStroke: "2px #1a1a1a",
-          paintOrder: "stroke fill",
-          filter: "drop-shadow(4px 4px 0 #1a1a1a)",
-        }}
-      >
-        TOURNEZ LA ROUE !
-      </motion.h1>
-      <p className="mt-3 mb-6 text-center text-base font-bold text-ink/80">
-        Bonne chance 🍀✨
-      </p>
-
-      <div className="relative mx-auto" style={{ width: "min(88vw, 360px)" }}>
-        {/* Pointer */}
-        <div className="absolute left-1/2 -top-4 z-20 -translate-x-1/2">
-          <div
-            className="h-0 w-0"
-            style={{
-              borderLeft: "18px solid transparent",
-              borderRight: "18px solid transparent",
-              borderTop: "30px solid #1a1a1a",
-            }}
+    <main className="flex min-h-screen flex-col items-center justify-center gap-8 px-4 py-10">
+      {!contactSaved && !alreadySpun && (
+        <div className="ink-border-thick w-full max-w-sm rounded-3xl bg-white p-8 shadow-pop-pink">
+          <h1 className="mb-4 font-display text-2xl font-extrabold">Avant de jouer 🎉</h1>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Votre prénom"
+            className="ink-border mb-3 min-h-[52px] w-full rounded-full bg-yellow/30 px-5 font-bold outline-none"
           />
-          <div
-            className="absolute left-1/2 top-0 h-0 w-0 -translate-x-1/2"
-            style={{
-              borderLeft: "13px solid transparent",
-              borderRight: "13px solid transparent",
-              borderTop: "22px solid #FFE600",
-            }}
+          <input
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="Votre téléphone"
+            className="ink-border mb-4 min-h-[52px] w-full rounded-full bg-yellow/30 px-5 font-bold outline-none"
           />
+          <button
+            onClick={saveContact}
+            className="ink-border-thick min-h-[52px] w-full rounded-full bg-pink px-6 font-extrabold uppercase text-white shadow-pop-ink"
+          >
+            Continuer 🚀
+          </button>
         </div>
+      )}
 
-        {/* Wheel */}
-        <div
-          className="relative aspect-square w-full rounded-full p-2"
-          style={{
-            background: "#1a1a1a",
-            boxShadow: "8px 8px 0 0 #1a1a1a",
-          }}
-        >
-          <motion.div
+      {contactSaved && (
+        <>
+          <div
             ref={wheelRef}
-            animate={{ rotate: rotation }}
-            transition={{ duration: 4.5, ease: [0.17, 0.67, 0.2, 1] }}
-            className="relative h-full w-full overflow-hidden rounded-full"
-            style={{ background: conicGradient, border: "4px solid #1a1a1a" }}
+            className="relative h-72 w-72 rounded-full ink-border-thick sm:h-96 sm:w-96"
+            style={{ background: conicGradient, transform: `rotate(${rotation}deg)`, transition: "transform 4s cubic-bezier(0.17,0.67,0.16,0.99)" }}
           >
-            {SEGMENTS.map((s, i) => {
-              const angle = i * SEG_ANGLE + SEG_ANGLE / 2;
-              return (
-                <div
-                  key={s.label}
-                  className="pointer-events-none absolute left-1/2 top-1/2 origin-left"
-                  style={{
-                    transform: `translateY(-50%) rotate(${angle - 90}deg)`,
-                    width: "50%",
-                  }}
-                >
-                  <div className="flex items-center justify-end gap-1 pr-5 text-right">
-                    <span className="text-2xl">{s.emoji}</span>
-                    <span
-                      className="font-display text-[13px] font-extrabold uppercase leading-tight text-ink sm:text-sm"
-                      style={{ textShadow: "1px 1px 0 rgba(255,255,255,0.5)" }}
-                    >
-                      {s.short}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-            {/* Dots */}
-            {Array.from({ length: 12 }).map((_, i) => {
-              const a = (i * 360) / 12;
-              return (
-                <div
-                  key={i}
-                  className="absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white"
-                  style={{
-                    transform: `translate(-50%, -50%) rotate(${a}deg) translateY(calc(-50% + 14px))`,
-                    border: "2px solid #1a1a1a",
-                  }}
-                />
-              );
-            })}
-          </motion.div>
-          {/* Hub */}
-          <div
-            className="absolute left-1/2 top-1/2 z-10 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-2xl"
-            style={{
-              background: "linear-gradient(135deg, #FFE600, #FF6B00)",
-              border: "4px solid #1a1a1a",
-              boxShadow: "0 4px 0 0 #1a1a1a",
-            }}
-          >
-            🎯
-          </div>
-        </div>
-      </div>
-
-      <motion.button
-        whileHover={!spinning ? { scale: 1.06, rotate: -1, y: -3 } : undefined}
-        whileTap={!spinning ? { scale: 0.94, y: 2 } : undefined}
-        animate={!spinning ? { rotate: [-1, 1, -1] } : undefined}
-        transition={{ rotate: { duration: 2.5, repeat: Infinity, ease: "easeInOut" } }}
-        disabled={spinning}
-        onClick={handleSpin}
-        className="ink-border-thick mt-10 min-h-[64px] w-full max-w-sm rounded-full bg-pink px-6 text-lg font-extrabold uppercase tracking-wide text-white shadow-pop-ink-lg transition disabled:opacity-70"
-      >
-        {spinning ? "🌀 Ça tourne…" : "TOURNER LA ROUE 🎰"}
-      </motion.button>
-
-      <AnimatePresence>
-        {result && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-ink/60 p-4 backdrop-blur-sm"
-            onClick={() => setResult(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.5, y: 50, rotate: -8 }}
-              animate={{ scale: 1, y: 0, rotate: 0 }}
-              exit={{ scale: 0.7, opacity: 0 }}
-              transition={{ type: "spring", damping: 14 }}
-              onClick={(e) => e.stopPropagation()}
-              className={`ink-border-thick relative w-full max-w-md rounded-3xl bg-white p-8 text-center shadow-pop-ink-lg ${
-                result.label !== "Essaie encore !" ? "shadow-pop-pink" : "shadow-pop-orange"
-              }`}
-            >
-              {result.label !== "Essaie encore !" ? (
-                <>
-                  <motion.div
-                    animate={{ rotate: [0, -10, 10, -10, 0], scale: [1, 1.2, 1] }}
-                    transition={{ duration: 0.8, repeat: Infinity, repeatDelay: 1 }}
-                    className="mb-2 text-7xl"
-                  >
-                    🏆
-                  </motion.div>
-                  <h2
-                    className="font-display text-4xl font-extrabold"
-                    style={{
-                      color: "#FF3DA6",
-                      WebkitTextStroke: "2px #1a1a1a",
-                      paintOrder: "stroke fill",
-                    }}
-                  >
-                    FÉLICITATIONS !
-                  </h2>
-                  <p className="mt-5 text-sm font-bold uppercase tracking-widest text-ink/60">
-                    Vous avez gagné
-                  </p>
-                  <div className="ink-border-thick mx-auto mt-3 inline-block rounded-2xl bg-yellow px-6 py-3 shadow-pop-ink">
-                    <span className="font-display text-2xl font-extrabold">
-                      {result.emoji} {result.label}
-                    </span>
-                  </div>
-                  <p className="mt-6 text-sm font-semibold text-ink/80">
-                    Montrez ce message à notre équipe pour profiter de votre récompense 🙌
-                  </p>
-                  <div className="ink-border mt-3 inline-block rounded-full bg-orange px-3 py-1 text-xs font-extrabold uppercase text-white">
-                    Valable aujourd'hui uniquement
-                  </div>
-                  <button
-                    onClick={() => {
-                      const text = `J'ai gagné ${result.label} avec Rollsy 🎰✨`;
-                      if (navigator.share) navigator.share({ text }).catch(() => {});
-                      else navigator.clipboard?.writeText(text);
-                    }}
-                    className="ink-border-thick mt-6 min-h-[52px] w-full rounded-full bg-green px-5 font-extrabold uppercase text-ink shadow-pop-ink"
-                  >
-                    📸 Partager
-                  </button>
-                </>
-              ) : (
-                <>
-                  <div className="mb-2 text-7xl">😅</div>
-                  <h2
-                    className="font-display text-4xl font-extrabold"
-                    style={{
-                      color: "#FF6B00",
-                      WebkitTextStroke: "2px #1a1a1a",
-                      paintOrder: "stroke fill",
-                    }}
-                  >
-                    OH NON !
-                  </h2>
-                  <p className="mt-4 font-bold">Pas de chance cette fois...</p>
-                  <p className="mt-2 text-sm font-semibold text-ink/70">
-                    Merci quand même pour votre avis ! ⭐
-                  </p>
-                  <p className="mt-2 font-extrabold" style={{ color: "#FF3DA6" }}>
-                    Revenez nous voir bientôt 😊
-                  </p>
-                </>
-              )}
-              <button
-                onClick={() => setResult(null)}
-                className="mt-6 text-xs font-extrabold uppercase tracking-widest text-ink/50 hover:text-ink"
+            {segments.map((s, i) => (
+              <div
+                key={i}
+                className="absolute left-1/2 top-1/2 origin-left text-sm font-extrabold"
+                style={{ transform: `rotate(${i * segAngle + segAngle / 2}deg) translateX(60px)` }}
               >
-                Fermer ✕
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                {s.emoji} {s.short}
+              </div>
+            ))}
+          </div>
+
+          {!alreadySpun ? (
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={handleSpin}
+              disabled={spinning}
+              className="ink-border-thick min-h-[56px] rounded-full bg-pink px-8 font-extrabold uppercase text-white shadow-pop-ink"
+            >
+              {spinning ? "🎰 Ça tourne..." : "Tourner la roue 🎉"}
+            </motion.button>
+          ) : (
+            <AnimatePresence>
+              {result && (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center">
+                  {result.rewardId ? (
+                    <>
+                      <p className="font-display text-2xl font-extrabold text-pink">Gagné : {result.label} 🎉</p>
+                      <p className="mt-2 text-lg font-bold">Code à présenter en caisse : {winCode}</p>
+                      <p className="text-sm text-ink/60">À utiliser lors de votre prochain achat.</p>
+                    </>
+                  ) : (
+                    <p className="font-display text-2xl font-extrabold">Perdu, retentez votre chance demain 😉</p>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          )}
+        </>
+      )}
     </main>
   );
 }
