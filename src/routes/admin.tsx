@@ -43,7 +43,7 @@ function csvCell(v: unknown) {
 }
 
 const PASSWORD = "rollsy2024";
-const GOOGLE_REVIEW_URL = "https://www.google.com/search?q=La+Gamelle+Avis";
+const GOOGLE_REVIEW_URL = "https://g.page/r/CUpOjpZbm_0kEAE/review";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
