@@ -67,6 +67,14 @@ function fireConfetti() {
   setTimeout(() => burst({ origin: { x: 0.5, y: 0.3 }, particleCount: 160, spread: 110 }), 250);
 }
 
+// En preview (chat Lovable / localhost), on autorise autant d'essais qu'on veut pour tester.
+function isPreviewEnv(): boolean {
+  if (typeof window === "undefined") return false;
+  const h = window.location.hostname;
+  return h === "localhost" || h === "127.0.0.1" || h.includes("id-preview--") || h.endsWith("-dev.lovable.app");
+}
+
+
 function RouePage() {
   const navigate = useNavigate();
   const [ready, setReady] = useState(false);
