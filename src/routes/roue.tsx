@@ -332,8 +332,9 @@ function RouePage() {
               {segments.map((s, i) => (
                 <div
                   key={i}
-                  className="absolute left-1/2 top-1/2 origin-left text-sm font-extrabold"
-                  style={{ transform: `rotate(${i * segAngle + segAngle / 2}deg) translateX(60px)` }}
+                  className="absolute left-1/2 top-1/2 origin-left whitespace-nowrap text-sm font-extrabold"
+                  // -90° car le conic-gradient part de 12h alors que rotate(0) pointe vers 3h
+                  style={{ transform: `rotate(${i * segAngle + segAngle / 2 - 90}deg) translateX(48px)` }}
                 >
                   {s.emoji} {s.short}
                 </div>
