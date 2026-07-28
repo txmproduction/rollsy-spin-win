@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 
 const GOOGLE_REVIEW_URL =
-  "https://g.page/r/Ceklyn43u5YKEAE/review";
+  "https://g.page/r/CUpOjpZbm_0kEAE/review";
 
 export const Route = createFileRoute("/")({
   head: () => ({
