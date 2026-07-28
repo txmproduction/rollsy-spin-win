@@ -261,20 +261,34 @@ function RouePage() {
 
       {contactSaved && (
         <>
-          <div
-            ref={wheelRef}
-            className="relative h-72 w-72 rounded-full ink-border-thick sm:h-96 sm:w-96"
-            style={{ background: conicGradient, transform: `rotate(${rotation}deg)`, transition: "transform 4s cubic-bezier(0.17,0.67,0.16,0.99)" }}
-          >
-            {segments.map((s, i) => (
-              <div
-                key={i}
-                className="absolute left-1/2 top-1/2 origin-left text-sm font-extrabold"
-                style={{ transform: `rotate(${i * segAngle + segAngle / 2}deg) translateX(60px)` }}
-              >
-                {s.emoji} {s.short}
-              </div>
-            ))}
+          <div className="relative h-72 w-72 sm:h-96 sm:w-96">
+            {/* Pointeur fixe qui indique le segment gagnant — ne tourne jamais avec la roue */}
+            <div
+              className="absolute left-1/2 top-[-14px] z-10 -translate-x-1/2"
+              style={{
+                width: 0,
+                height: 0,
+                borderLeft: "16px solid transparent",
+                borderRight: "16px solid transparent",
+                borderTop: "26px solid #1a1a1a",
+                filter: "drop-shadow(0 2px 0 rgba(0,0,0,0.2))",
+              }}
+            />
+            <div
+              ref={wheelRef}
+              className="relative h-72 w-72 rounded-full ink-border-thick sm:h-96 sm:w-96"
+              style={{ background: conicGradient, transform: `rotate(${rotation}deg)`, transition: "transform 4s cubic-bezier(0.17,0.67,0.16,0.99)" }}
+            >
+              {segments.map((s, i) => (
+                <div
+                  key={i}
+                  className="absolute left-1/2 top-1/2 origin-left text-sm font-extrabold"
+                  style={{ transform: `rotate(${i * segAngle + segAngle / 2}deg) translateX(60px)` }}
+                >
+                  {s.emoji} {s.short}
+                </div>
+              ))}
+            </div>
           </div>
 
           {!alreadySpun ? (
