@@ -296,6 +296,77 @@ function AdminPage() {
           </button>
         </div>
       </div>
+
+      <section className="mt-10 space-y-6">
+        <h2 className="font-display text-2xl font-extrabold">
+          📈 Statistiques globales {loading && <span className="text-base">⏳</span>}
+        </h2>
+
+        <div className="grid gap-6 sm:grid-cols-2">
+          <div className="ink-border-thick rounded-3xl bg-yellow p-6 text-center shadow-pop-ink">
+            <div className="font-display text-5xl font-extrabold">{stats.totalSpins}</div>
+            <div className="mt-1 text-xs font-extrabold uppercase tracking-widest">
+              🎰 Tours joués (total)
+            </div>
+          </div>
+          <div className="ink-border-thick rounded-3xl bg-pink p-6 text-center text-white shadow-pop-ink">
+            <div className="font-display text-5xl font-extrabold">{stats.totalWins}</div>
+            <div className="mt-1 text-xs font-extrabold uppercase tracking-widest">
+              🎁 Gains (total)
+            </div>
+          </div>
+        </div>
+
+        <div className="ink-border-thick rounded-3xl bg-white p-6 shadow-pop-pink">
+          <h3 className="mb-4 text-xs font-extrabold uppercase tracking-widest text-ink/60">
+            🏆 Répartition des gains par lot
+          </h3>
+          {stats.byReward.length === 0 ? (
+            <p className="text-sm font-bold text-ink/50">Aucun gain enregistré pour l'instant.</p>
+          ) : (
+            <ul className="space-y-3">
+              {stats.byReward.map(([name, count]) => (
+                <li
+                  key={name}
+                  className="ink-border flex items-center justify-between rounded-2xl bg-green/30 px-4 py-3"
+                >
+                  <span className="font-extrabold">{name}</span>
+                  <span className="font-display text-xl font-extrabold">{count}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {stats.chicken && (
+          <div className="ink-border-thick rounded-3xl bg-white p-6 shadow-pop-orange">
+            <h3 className="mb-2 text-xs font-extrabold uppercase tracking-widest text-ink/60">
+              🍗 {stats.chicken.name} — cette semaine
+            </h3>
+            <p className="font-display text-3xl font-extrabold">
+              {stats.chickenWeek}/{stats.chicken.quota} déjà gagné cette semaine
+            </p>
+            <p className="mt-1 text-sm font-bold text-ink/60">
+              Quota restant : {Math.max(0, stats.chicken.quota - stats.chickenWeek)}
+            </p>
+          </div>
+        )}
+
+        <div className="ink-border-thick rounded-3xl bg-white p-6 shadow-pop-ink">
+          <h3 className="mb-3 text-xs font-extrabold uppercase tracking-widest text-ink/60">
+            👥 Clients ({clients.length})
+          </h3>
+          <motion.button
+            whileHover={{ scale: 1.03, y: -2 }}
+            whileTap={{ scale: 0.97, y: 2 }}
+            onClick={exportClientsCsv}
+            className="ink-border-thick min-h-[52px] w-full rounded-full bg-green px-5 font-extrabold uppercase shadow-pop-ink"
+          >
+            ⬇️ Exporter les clients en CSV
+          </motion.button>
+        </div>
+      </section>
     </main>
+
   );
 }
