@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { QRCodeCanvas } from "qrcode.react";
 import { motion } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
+import { getAdminData, verifyAdminPassword } from "@/lib/rollsy.functions";
 
 type Spin = {
   id: string;
@@ -42,7 +42,6 @@ function csvCell(v: unknown) {
   return `"${s.replace(/"/g, '""')}"`;
 }
 
-const PASSWORD = "rollsy2024";
 const GOOGLE_REVIEW_URL = "https://g.page/r/CUpOjpZbm_0kEAE/review";
 
 export const Route = createFileRoute("/admin")({
@@ -70,24 +69,33 @@ function AdminPage() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     setAppUrl(window.location.origin + "/");
-    if (sessionStorage.getItem("rollsy_admin") === "1") setUnlocked(true);
+    const saved = sessionStorage.getItem("rollsy_admin_pwd");
+    if (saved) {
+      verifyAdminPassword({ data: { password: saved } }).then(({ ok }) => {
+        if (ok) {
+          setPwd(saved);
+          setUnlocked(true);
+        } else sessionStorage.removeItem("rollsy_admin_pwd");
+      });
+    }
   }, []);
 
   useEffect(() => {
     if (!unlocked) return;
     setLoading(true);
     (async () => {
-      const [s, r, c] = await Promise.all([
-        supabase.from("spins").select("*").order("created_at", { ascending: false }),
-        supabase.from("rewards").select("*"),
-        supabase.from("clients").select("*").order("created_at", { ascending: false }),
-      ]);
-      setSpins((s.data as Spin[]) || []);
-      setRewards((r.data as Reward[]) || []);
-      setClients((c.data as Client[]) || []);
+      try {
+        const data = await getAdminData({ data: { password: pwd } });
+        setSpins(data.spins as Spin[]);
+        setRewards(data.rewards as Reward[]);
+        setClients(data.clients as Client[]);
+      } catch {
+        setError("Session expirée, reconnectez-vous.");
+        setUnlocked(false);
+      }
       setLoading(false);
     })();
-  }, [unlocked]);
+  }, [unlocked, pwd]);
 
   const stats = useMemo(() => {
     const todayStart = startOfToday().getTime();
@@ -149,10 +157,11 @@ function AdminPage() {
 
 
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (pwd === PASSWORD) {
-      sessionStorage.setItem("rollsy_admin", "1");
+    const { ok } = await verifyAdminPassword({ data: { password: pwd } });
+    if (ok) {
+      sessionStorage.setItem("rollsy_admin_pwd", pwd);
       setUnlocked(true);
       setError("");
     } else setError("Mot de passe incorrect 🚫");
@@ -287,7 +296,8 @@ function AdminPage() {
 
           <button
             onClick={() => {
-              sessionStorage.removeItem("rollsy_admin");
+              sessionStorage.removeItem("rollsy_admin_pwd");
+              setPwd("");
               setUnlocked(false);
             }}
             className="text-xs font-extrabold uppercase tracking-widest text-ink/50 hover:text-ink"
