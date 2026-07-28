@@ -67,6 +67,14 @@ function fireConfetti() {
   setTimeout(() => burst({ origin: { x: 0.5, y: 0.3 }, particleCount: 160, spread: 110 }), 250);
 }
 
+// En preview (chat Lovable / localhost), on autorise autant d'essais qu'on veut pour tester.
+function isPreviewEnv(): boolean {
+  if (typeof window === "undefined") return false;
+  const h = window.location.hostname;
+  return h === "localhost" || h === "127.0.0.1" || h.includes("id-preview--") || h.endsWith("-dev.lovable.app");
+}
+
+
 function RouePage() {
   const navigate = useNavigate();
   const [ready, setReady] = useState(false);
@@ -83,20 +91,27 @@ function RouePage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (localStorage.getItem("hasReviewed") !== "true") {
-      navigate({ to: "/" });
-      return;
-    }
-    // Réinitialise le blocage après 24h
-    const spunAt = Number(localStorage.getItem("spunAt") || 0);
-    if (localStorage.getItem("hasSpun") === "true") {
-      if (spunAt && Date.now() - spunAt > 24 * 60 * 60 * 1000) {
-        localStorage.removeItem("hasSpun");
-        localStorage.removeItem("spunAt");
-      } else {
-        setAlreadySpun(true);
+    if (isPreviewEnv()) {
+      // Mode test : on efface les blocages pour pouvoir rejouer à l'infini
+      localStorage.removeItem("hasSpun");
+      localStorage.removeItem("spunAt");
+    } else {
+      if (localStorage.getItem("hasReviewed") !== "true") {
+        navigate({ to: "/" });
+        return;
+      }
+      // Réinitialise le blocage après 24h
+      const spunAt = Number(localStorage.getItem("spunAt") || 0);
+      if (localStorage.getItem("hasSpun") === "true") {
+        if (spunAt && Date.now() - spunAt > 24 * 60 * 60 * 1000) {
+          localStorage.removeItem("hasSpun");
+          localStorage.removeItem("spunAt");
+        } else {
+          setAlreadySpun(true);
+        }
       }
     }
+
 
     (async () => {
       const { data } = await supabase.from("rewards").select("*").eq("active", true);
@@ -223,9 +238,12 @@ function RouePage() {
     setTimeout(async () => {
       setResult(outcome);
       setSpinning(false);
-      localStorage.setItem("hasSpun", "true");
-      localStorage.setItem("spunAt", String(Date.now()));
-      setAlreadySpun(true);
+      if (!isPreviewEnv()) {
+        localStorage.setItem("hasSpun", "true");
+        localStorage.setItem("spunAt", String(Date.now()));
+        setAlreadySpun(true);
+      }
+
 
       const clientId = localStorage.getItem("rollsy_client_id");
       let code: string | null = null;
@@ -320,7 +338,7 @@ function RouePage() {
             </div>
           </div>
 
-          {!alreadySpun ? (
+          {!alreadySpun && (
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={handleSpin}
@@ -329,23 +347,25 @@ function RouePage() {
             >
               {spinning ? "🎰 Ça tourne..." : "Tourner la roue 🎉"}
             </motion.button>
-          ) : (
-            <AnimatePresence>
-              {result && (
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center">
-                  {result.rewardId ? (
-                    <>
-                      <p className="font-display text-2xl font-extrabold text-pink">Gagné : {result.label} 🎉</p>
-                      <p className="mt-2 text-lg font-bold">Code à présenter en caisse : {winCode}</p>
-                      <p className="text-sm text-ink/60">À utiliser lors de votre prochain achat.</p>
-                    </>
-                  ) : (
-                    <p className="font-display text-2xl font-extrabold">Perdu, retentez votre chance demain 😉</p>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
           )}
+          <AnimatePresence>
+            {result && !spinning && (
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center">
+                {result.rewardId ? (
+                  <>
+                    <p className="font-display text-2xl font-extrabold text-pink">Gagné : {result.label} 🎉</p>
+                    <p className="mt-2 text-lg font-bold">Code à présenter en caisse : {winCode}</p>
+                    <p className="text-sm text-ink/60">À utiliser lors de votre prochain achat.</p>
+                  </>
+                ) : (
+                  <p className="font-display text-2xl font-extrabold">
+                    {alreadySpun ? "Perdu, retentez votre chance demain 😉" : "Perdu ! Retente un tour 🔁"}
+                  </p>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
         </>
       )}
     </main>
