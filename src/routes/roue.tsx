@@ -87,9 +87,17 @@ function RouePage() {
       navigate({ to: "/" });
       return;
     }
+    // Réinitialise le blocage après 24h
+    const spunAt = Number(localStorage.getItem("spunAt") || 0);
     if (localStorage.getItem("hasSpun") === "true") {
-      setAlreadySpun(true);
+      if (spunAt && Date.now() - spunAt > 24 * 60 * 60 * 1000) {
+        localStorage.removeItem("hasSpun");
+        localStorage.removeItem("spunAt");
+      } else {
+        setAlreadySpun(true);
+      }
     }
+
     (async () => {
       const { data } = await supabase.from("rewards").select("*").eq("active", true);
       setRewards((data as Reward[]) || []);
@@ -259,7 +267,23 @@ function RouePage() {
         </div>
       )}
 
+      {alreadySpun && !contactSaved && (
+        <div className="ink-border-thick w-full max-w-sm rounded-3xl bg-white p-8 text-center shadow-pop-pink">
+          <h1 className="mb-3 font-display text-2xl font-extrabold">Déjà joué aujourd'hui 🎰</h1>
+          <p className="mb-6 font-bold text-ink/70">
+            Vous avez déjà tourné la roue ! Revenez après votre prochain avis. ⭐
+          </p>
+          <button
+            onClick={() => navigate({ to: "/" })}
+            className="ink-border-thick min-h-[52px] w-full rounded-full bg-yellow px-6 font-extrabold uppercase shadow-pop-ink"
+          >
+            Retour à l'accueil 🏠
+          </button>
+        </div>
+      )}
+
       {contactSaved && (
+
         <>
           <div className="relative h-72 w-72 sm:h-96 sm:w-96">
             {/* Pointeur fixe qui indique le segment gagnant — ne tourne jamais avec la roue */}
