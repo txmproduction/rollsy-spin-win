@@ -14,7 +14,126 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      clients: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          name: string | null
+          phone: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string | null
+          phone?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string | null
+          phone?: string | null
+        }
+        Relationships: []
+      }
+      rewards: {
+        Row: {
+          active: boolean
+          created_at: string
+          frequency: string
+          id: string
+          name: string
+          quota: number
+          quota_afternoon: number | null
+          quota_morning: number | null
+          short_label: string | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          frequency: string
+          id?: string
+          name: string
+          quota?: number
+          quota_afternoon?: number | null
+          quota_morning?: number | null
+          short_label?: string | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          frequency?: string
+          id?: string
+          name?: string
+          quota?: number
+          quota_afternoon?: number | null
+          quota_morning?: number | null
+          short_label?: string | null
+        }
+        Relationships: []
+      }
+      settings: {
+        Row: {
+          key: string
+          value: string | null
+        }
+        Insert: {
+          key: string
+          value?: string | null
+        }
+        Update: {
+          key?: string
+          value?: string | null
+        }
+        Relationships: []
+      }
+      spins: {
+        Row: {
+          client_id: string | null
+          code: string | null
+          code_used: boolean
+          created_at: string
+          id: string
+          result: string
+          reward_id: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          code?: string | null
+          code_used?: boolean
+          created_at?: string
+          id?: string
+          result: string
+          reward_id?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          code?: string | null
+          code_used?: boolean
+          created_at?: string
+          id?: string
+          result?: string
+          reward_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spins_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spins_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "rewards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
