@@ -224,7 +224,10 @@ function RouePage() {
     setSpinning(true);
 
     const outcome = await decideOutcome();
-    const idx = segments.findIndex((s) => s.rewardId === outcome.rewardId && s.label === outcome.label);
+    const foundIdx = segments.findIndex((s) => s.rewardId === outcome.rewardId && s.label === outcome.label);
+    const idx = foundIdx >= 0 ? foundIdx : segments.length - 1;
+    // Le conic-gradient démarre à 12h et tourne dans le sens horaire :
+    // le centre du segment i se trouve à idx*segAngle + segAngle/2 depuis le pointeur.
     const targetAngle = idx * segAngle + segAngle / 2;
     const spins = 5; // tours complets pour l'effet visuel
     // La roue peut déjà être dans une position quelconque (accumulée des tours précédents) —
@@ -329,8 +332,9 @@ function RouePage() {
               {segments.map((s, i) => (
                 <div
                   key={i}
-                  className="absolute left-1/2 top-1/2 origin-left text-sm font-extrabold"
-                  style={{ transform: `rotate(${i * segAngle + segAngle / 2}deg) translateX(60px)` }}
+                  className="absolute left-1/2 top-1/2 origin-left whitespace-nowrap text-sm font-extrabold"
+                  // -90° car le conic-gradient part de 12h alors que rotate(0) pointe vers 3h
+                  style={{ transform: `rotate(${i * segAngle + segAngle / 2 - 90}deg) translateX(48px)` }}
                 >
                   {s.emoji} {s.short}
                 </div>
