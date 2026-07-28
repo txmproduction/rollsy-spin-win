@@ -61,7 +61,10 @@ function AdminPage() {
   const [pwd, setPwd] = useState("");
   const [error, setError] = useState("");
   const [appUrl, setAppUrl] = useState("");
-  const [stats, setStats] = useState({ spins: 0, rewards: 0 });
+  const [spins, setSpins] = useState<Spin[]>([]);
+  const [rewards, setRewards] = useState<Reward[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(false);
   const qrWrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -72,11 +75,79 @@ function AdminPage() {
 
   useEffect(() => {
     if (!unlocked) return;
-    const today = new Date().toISOString().slice(0, 10);
-    const raw = localStorage.getItem("rollsy_stats");
-    const all = raw ? JSON.parse(raw) : {};
-    setStats(all[today] || { spins: 0, rewards: 0 });
+    setLoading(true);
+    (async () => {
+      const [s, r, c] = await Promise.all([
+        supabase.from("spins").select("*").order("created_at", { ascending: false }),
+        supabase.from("rewards").select("*"),
+        supabase.from("clients").select("*").order("created_at", { ascending: false }),
+      ]);
+      setSpins((s.data as Spin[]) || []);
+      setRewards((r.data as Reward[]) || []);
+      setClients((c.data as Client[]) || []);
+      setLoading(false);
+    })();
   }, [unlocked]);
+
+  const stats = useMemo(() => {
+    const todayStart = startOfToday().getTime();
+    const weekStart = startOfWeek().getTime();
+    const wins = spins.filter((s) => s.result === "win");
+    const todaySpins = spins.filter((s) => new Date(s.created_at).getTime() >= todayStart);
+    const rewardName = (id: string | null) =>
+      rewards.find((r) => r.id === id)?.name ?? "Sans lot";
+
+    const byReward = new Map<string, number>();
+    for (const w of wins) {
+      const key = rewardName(w.reward_id);
+      byReward.set(key, (byReward.get(key) || 0) + 1);
+    }
+
+    const chicken = rewards.find((r) => /ailes de poulet/i.test(r.name));
+    const chickenWeek = chicken
+      ? wins.filter(
+          (w) => w.reward_id === chicken.id && new Date(w.created_at).getTime() >= weekStart,
+        ).length
+      : 0;
+
+    return {
+      totalSpins: spins.length,
+      totalWins: wins.length,
+      todaySpins: todaySpins.length,
+      todayWins: todaySpins.filter((s) => s.result === "win").length,
+      byReward: [...byReward.entries()].sort((a, b) => b[1] - a[1]),
+      chicken,
+      chickenWeek,
+    };
+  }, [spins, rewards]);
+
+  const exportClientsCsv = () => {
+    const rewardName = (id: string | null) =>
+      rewards.find((r) => r.id === id)?.name ?? "Sans lot";
+    const header = ["Nom", "Téléphone", "Email", "Date d'inscription", "Participations", "Gains", "Lots gagnés"];
+    const rows = clients.map((c) => {
+      const mine = spins.filter((s) => s.client_id === c.id);
+      const wins = mine.filter((s) => s.result === "win");
+      return [
+        c.name,
+        c.phone,
+        c.email,
+        new Date(c.created_at).toLocaleString("fr-FR"),
+        mine.length,
+        wins.length,
+        wins.map((w) => rewardName(w.reward_id)).join(" | "),
+      ];
+    });
+    const csv = [header, ...rows].map((r) => r.map(csvCell).join(";")).join("\r\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `rollsy-clients-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+
+
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
