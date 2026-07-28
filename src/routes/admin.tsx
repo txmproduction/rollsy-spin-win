@@ -1,7 +1,46 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { QRCodeCanvas } from "qrcode.react";
 import { motion } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
+
+type Spin = {
+  id: string;
+  client_id: string | null;
+  reward_id: string | null;
+  result: string;
+  created_at: string;
+};
+type Reward = {
+  id: string;
+  name: string;
+  short_label: string | null;
+  frequency: string;
+  quota: number;
+};
+type Client = {
+  id: string;
+  name: string | null;
+  phone: string | null;
+  email: string | null;
+  created_at: string;
+};
+
+function startOfToday() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+function startOfWeek() {
+  const d = startOfToday();
+  const day = (d.getDay() + 6) % 7; // lundi = 0
+  d.setDate(d.getDate() - day);
+  return d;
+}
+function csvCell(v: unknown) {
+  const s = v == null ? "" : String(v);
+  return `"${s.replace(/"/g, '""')}"`;
+}
 
 const PASSWORD = "rollsy2024";
 const GOOGLE_REVIEW_URL = "https://www.google.com/search?q=La+Gamelle+Avis";
