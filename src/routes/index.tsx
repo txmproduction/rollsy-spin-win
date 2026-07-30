@@ -187,6 +187,15 @@ function Index() {
       <footer className="ink-border-thick mx-4 mb-6 rounded-3xl bg-white px-6 py-5 text-center text-sm font-bold shadow-pop-pink sm:mx-auto sm:max-w-2xl">
         Powered by <span className="text-pink" style={{ color: "#FF3DA6" }}>ROLLSY</span> 🎪 — La solution avis & fidélité pour les commerçants
       </footer>
+
+      <div className="mb-6 text-center">
+        <a
+          href="/admin"
+          className="text-[10px] font-semibold uppercase tracking-widest text-ink/30 hover:text-ink/60"
+        >
+          admin
+        </a>
+      </div>
     </main>
   );
 }

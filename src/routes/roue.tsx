@@ -317,12 +317,6 @@ function RouePage() {
 
         </>
       )}
-      <a
-        href="/admin"
-        className="mt-10 text-[10px] font-semibold uppercase tracking-widest text-ink/30 hover:text-ink/60"
-      >
-        admin
-      </a>
     </main>
   );
 }
