@@ -118,6 +118,31 @@ export async function decideAndRecordSpin(clientId: string | null) {
   return { rewardId: wonId, code };
 }
 
+export async function resetAllData(password: string) {
+  if (password !== adminPassword()) throw new Error("Unauthorized");
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+  // Supprime les tours (compteurs de gains + quotas consommés) puis les clients.
+  // Les lots (rewards) et les réglages (settings) ne sont pas touchés.
+  const spinsRes = await supabaseAdmin
+    .from("spins")
+    .delete()
+    .not("id", "is", null);
+  if (spinsRes.error) {
+    console.error("[rollsy] reset spins failed", spinsRes.error);
+    throw new Error("Échec de la réinitialisation des tours.");
+  }
+  const clientsRes = await supabaseAdmin
+    .from("clients")
+    .delete()
+    .not("id", "is", null);
+  if (clientsRes.error) {
+    console.error("[rollsy] reset clients failed", clientsRes.error);
+    throw new Error("Échec de la réinitialisation des clients.");
+  }
+  return { ok: true as const };
+}
+
 export async function loadAdminData(password: string) {
   if (password !== adminPassword()) throw new Error("Unauthorized");
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
