@@ -2,6 +2,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { QRCodeCanvas } from "qrcode.react";
 import { motion } from "framer-motion";
+import {
+  getAdminData,
+  resetRollsyData,
+  verifyAdminPassword,
+} from "@/lib/rollsy.functions";
+
 
 type Spin = {
   id: string;
