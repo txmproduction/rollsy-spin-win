@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { QRCodeCanvas } from "qrcode.react";
 import { motion } from "framer-motion";
-import { getAdminData, verifyAdminPassword } from "@/lib/rollsy.functions";
+import { getAdminData, verifyAdminPassword, resetRollsyData } from "@/lib/rollsy.functions";
 
 type Spin = {
   id: string;
@@ -64,6 +64,10 @@ function AdminPage() {
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [confirmReset, setConfirmReset] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [resetMsg, setResetMsg] = useState("");
   const qrWrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -95,7 +99,21 @@ function AdminPage() {
       }
       setLoading(false);
     })();
-  }, [unlocked, pwd]);
+  }, [unlocked, pwd, refreshKey]);
+
+  const handleReset = async () => {
+    setResetting(true);
+    setResetMsg("");
+    try {
+      await resetRollsyData({ data: { password: pwd } });
+      setConfirmReset(false);
+      setResetMsg("Données réinitialisées avec succès ✅");
+      setRefreshKey((k) => k + 1);
+    } catch {
+      setResetMsg("Échec de la réinitialisation ❌");
+    }
+    setResetting(false);
+  };
 
   const stats = useMemo(() => {
     const todayStart = startOfToday().getTime();
@@ -375,7 +393,63 @@ function AdminPage() {
             ⬇️ Exporter les clients en CSV
           </motion.button>
         </div>
+        <div className="ink-border-thick rounded-3xl bg-orange/15 p-6 shadow-pop-orange">
+          <h3 className="mb-2 font-display text-xl font-extrabold text-orange-600">
+            ⚠️ Zone dangereuse
+          </h3>
+          <p className="mb-4 text-sm font-bold text-ink/70">
+            Supprime tous les tours joués, tous les clients, la répartition des gains et
+            remet les quotas consommés (jour/semaine) à zéro. La configuration des lots et
+            les réglages admin ne sont pas modifiés.
+          </p>
+          <motion.button
+            whileHover={{ scale: 1.03, y: -2 }}
+            whileTap={{ scale: 0.97, y: 2 }}
+            onClick={() => {
+              setResetMsg("");
+              setConfirmReset(true);
+            }}
+            className="ink-border-thick min-h-[52px] w-full rounded-full bg-orange px-5 font-extrabold uppercase text-white shadow-pop-ink"
+          >
+            🗑️ Réinitialiser les données
+          </motion.button>
+          {resetMsg && (
+            <p className="mt-3 text-sm font-extrabold text-ink">{resetMsg}</p>
+          )}
+        </div>
       </section>
+
+      {confirmReset && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/60 px-4">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="ink-border-thick w-full max-w-md rounded-3xl bg-white p-6 shadow-pop-pink"
+          >
+            <h4 className="mb-3 font-display text-2xl font-extrabold">Êtes-vous sûr ? 😬</h4>
+            <p className="mb-6 text-sm font-bold text-ink/80">
+              Cette action supprimera définitivement tous les tours joués, tous les clients
+              et toutes les statistiques. Cette action est irréversible. Confirmer ?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmReset(false)}
+                disabled={resetting}
+                className="ink-border min-h-[52px] flex-1 rounded-full bg-white px-5 font-extrabold uppercase"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleReset}
+                disabled={resetting}
+                className="ink-border-thick min-h-[52px] flex-1 rounded-full bg-orange px-5 font-extrabold uppercase text-white shadow-pop-ink"
+              >
+                {resetting ? "…" : "Confirmer"}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </main>
 
   );

@@ -6,8 +6,13 @@ import {
   insertClientContact,
   decideAndRecordSpin,
   loadAdminData,
+  resetAllData,
   adminPassword,
 } from "./rollsy.server";
+
+export const resetRollsyData = createServerFn({ method: "POST" })
+  .inputValidator((data: unknown) => passwordSchema.parse(data))
+  .handler(async ({ data }) => resetAllData(data.password));
 
 export const createClientContact = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => contactSchema.parse(data))
