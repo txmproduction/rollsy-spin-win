@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { QRCodeCanvas } from "qrcode.react";
 import { motion } from "framer-motion";
-import { getAdminData, verifyAdminPassword } from "@/lib/rollsy.functions";
+import { getAdminData, verifyAdminPassword, resetRollsyData } from "@/lib/rollsy.functions";
 
 type Spin = {
   id: string;
@@ -64,6 +64,10 @@ function AdminPage() {
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [confirmReset, setConfirmReset] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [resetMsg, setResetMsg] = useState("");
   const qrWrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
