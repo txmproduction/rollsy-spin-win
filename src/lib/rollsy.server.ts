@@ -6,7 +6,24 @@ const LOSE_WEIGHT = 5;
 export const contactSchema = z.object({
   name: z.string().trim().min(1).max(80),
   phone: z.string().trim().min(4).max(30),
+  termsAccepted: z.literal(true),
+  marketingConsent: z.boolean(),
 });
+
+export const settingsSchema = z.object({
+  password: z.string().max(200),
+  values: z.record(z.string().max(60), z.string().trim().max(300)),
+});
+
+export const PUBLIC_SETTING_KEYS = [
+  "business_name",
+  "business_address",
+  "business_email",
+  "agency_name",
+  "agency_email",
+  "agency_address",
+  "agency_legal",
+] as const;
 export const spinSchema = z.object({ clientId: z.string().uuid().nullable().optional() });
 export const passwordSchema = z.object({ password: z.string().max(200) });
 
@@ -36,11 +53,51 @@ export function adminPassword() {
   return process.env.ADMIN_PASSWORD ?? "rollsy2024";
 }
 
-export async function insertClientContact(input: { name: string; phone: string }) {
+export async function getPublicSettings() {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data } = await supabaseAdmin
+    .from("settings")
+    .select("key, value")
+    .in("key", PUBLIC_SETTING_KEYS as unknown as string[]);
+  const out: Record<string, string> = {};
+  for (const k of PUBLIC_SETTING_KEYS) out[k] = "";
+  for (const row of data ?? []) out[row.key as string] = (row.value as string) ?? "";
+  return out;
+}
+
+export async function saveSettings(password: string, values: Record<string, string>) {
+  if (password !== adminPassword()) throw new Error("Unauthorized");
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const rows = Object.entries(values)
+    .filter(([k]) => (PUBLIC_SETTING_KEYS as readonly string[]).includes(k))
+    .map(([key, value]) => ({ key, value }));
+  if (rows.length === 0) return { ok: true as const };
+  const { error } = await supabaseAdmin.from("settings").upsert(rows, { onConflict: "key" });
+  if (error) {
+    console.error("[rollsy] saveSettings failed", error);
+    throw new Error("Échec de l'enregistrement des réglages.");
+  }
+  return { ok: true as const };
+}
+
+export async function insertClientContact(input: {
+  name: string;
+  phone: string;
+  termsAccepted: boolean;
+  marketingConsent: boolean;
+  ip: string | null;
+}) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin
     .from("clients")
-    .insert({ name: input.name, phone: input.phone })
+    .insert({
+      name: input.name,
+      phone: input.phone,
+      terms_accepted: input.termsAccepted,
+      marketing_consent: input.marketingConsent,
+      consent_at: new Date().toISOString(),
+      consent_ip: input.ip,
+    })
     .select("id")
     .single();
   if (error || !data) {
@@ -155,11 +212,14 @@ export async function loadAdminData(password: string) {
     supabaseAdmin.from("rewards").select("id, name, short_label, frequency, quota"),
     supabaseAdmin
       .from("clients")
-      .select("id, name, phone, email, created_at")
+      .select("id, name, phone, email, created_at, terms_accepted, marketing_consent, consent_at, consent_ip")
       .order("created_at", { ascending: false }),
   ]);
 
+  const settings = await getPublicSettings();
+
   return {
+    settings,
     spins: spins.data ?? [],
     rewards: rewards.data ?? [],
     clients: clients.data ?? [],

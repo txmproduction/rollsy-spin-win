@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as ConfidentialiteRouteImport } from './routes/confidentialite'
 import { Route as RoueRouteImport } from './routes/roue'
 
 const IndexRoute = IndexRouteImport.update({
@@ -23,6 +24,11 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ConfidentialiteRoute = ConfidentialiteRouteImport.update({
+  id: '/confidentialite',
+  path: '/confidentialite',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RoueRoute = RoueRouteImport.update({
   id: '/roue',
   path: '/roue',
@@ -32,30 +38,34 @@ const RoueRoute = RoueRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/confidentialite': typeof ConfidentialiteRoute
   '/roue': typeof RoueRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/confidentialite': typeof ConfidentialiteRoute
   '/roue': typeof RoueRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/confidentialite': typeof ConfidentialiteRoute
   '/roue': typeof RoueRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/roue'
+  fullPaths: '/' | '/admin' | '/confidentialite' | '/roue'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/roue'
-  id: '__root__' | '/' | '/admin' | '/roue'
+  to: '/' | '/admin' | '/confidentialite' | '/roue'
+  id: '__root__' | '/' | '/admin' | '/confidentialite' | '/roue'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
+  ConfidentialiteRoute: typeof ConfidentialiteRoute
   RoueRoute: typeof RoueRoute
 }
 
@@ -75,6 +85,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/confidentialite': {
+      id: '/confidentialite'
+      path: '/confidentialite'
+      fullPath: '/confidentialite'
+      preLoaderRoute: typeof ConfidentialiteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/roue': {
       id: '/roue'
       path: '/roue'
@@ -88,6 +105,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
+  ConfidentialiteRoute: ConfidentialiteRoute,
   RoueRoute: RoueRoute,
 }
 export const routeTree = rootRouteImport

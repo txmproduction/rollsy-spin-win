@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { QRCodeCanvas } from "qrcode.react";
 import { motion } from "framer-motion";
-import { getAdminData, verifyAdminPassword, resetRollsyData } from "@/lib/rollsy.functions";
+import { getAdminData, verifyAdminPassword, resetRollsyData, updateSettings } from "@/lib/rollsy.functions";
 
 type Spin = {
   id: string;
@@ -24,7 +24,21 @@ type Client = {
   phone: string | null;
   email: string | null;
   created_at: string;
+  terms_accepted?: boolean | null;
+  marketing_consent?: boolean | null;
+  consent_at?: string | null;
+  consent_ip?: string | null;
 };
+
+const SETTING_FIELDS: { key: string; label: string }[] = [
+  { key: "business_name", label: "Nom du commerce" },
+  { key: "business_address", label: "Adresse du commerce" },
+  { key: "business_email", label: "Email de contact du commerce" },
+  { key: "agency_name", label: "Prestataire technique" },
+  { key: "agency_email", label: "Email du prestataire" },
+  { key: "agency_address", label: "Adresse du prestataire" },
+  { key: "agency_legal", label: "Mentions légales du prestataire" },
+];
 
 function startOfToday() {
   const d = new Date();
@@ -68,6 +82,9 @@ function AdminPage() {
   const [confirmReset, setConfirmReset] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [resetMsg, setResetMsg] = useState("");
+  const [settings, setSettings] = useState<Record<string, string>>({});
+  const [settingsMsg, setSettingsMsg] = useState("");
+  const [savingSettings, setSavingSettings] = useState(false);
   const qrWrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -93,6 +110,7 @@ function AdminPage() {
         setSpins(data.spins as Spin[]);
         setRewards(data.rewards as Reward[]);
         setClients(data.clients as Client[]);
+        setSettings((data.settings ?? {}) as Record<string, string>);
       } catch {
         setError("Session expirée, reconnectez-vous.");
         setUnlocked(false);
@@ -113,6 +131,19 @@ function AdminPage() {
       setResetMsg("Échec de la réinitialisation ❌");
     }
     setResetting(false);
+  };
+
+  const handleSaveSettings = async () => {
+    setSavingSettings(true);
+    setSettingsMsg("");
+    try {
+      await updateSettings({ data: { password: pwd, values: settings } });
+      setSettingsMsg("Réglages enregistrés ✅");
+      setRefreshKey((k) => k + 1);
+    } catch {
+      setSettingsMsg("Échec de l'enregistrement ❌");
+    }
+    setSavingSettings(false);
   };
 
   const stats = useMemo(() => {
@@ -150,7 +181,19 @@ function AdminPage() {
   const exportClientsCsv = () => {
     const rewardName = (id: string | null) =>
       rewards.find((r) => r.id === id)?.name ?? "Sans lot";
-    const header = ["Nom", "Téléphone", "Email", "Date d'inscription", "Participations", "Gains", "Lots gagnés"];
+    const header = [
+      "Nom",
+      "Téléphone",
+      "Email",
+      "Date d'inscription",
+      "CGU acceptées",
+      "Consentement SMS marketing",
+      "Date/heure du consentement",
+      "IP du consentement",
+      "Participations",
+      "Gains",
+      "Lots gagnés",
+    ];
     const rows = clients.map((c) => {
       const mine = spins.filter((s) => s.client_id === c.id);
       const wins = mine.filter((s) => s.result === "win");
@@ -159,6 +202,10 @@ function AdminPage() {
         c.phone,
         c.email,
         new Date(c.created_at).toLocaleString("fr-FR"),
+        c.terms_accepted ? "Oui" : "Non",
+        c.marketing_consent ? "Oui" : "Non",
+        c.consent_at ? new Date(c.consent_at).toLocaleString("fr-FR") : "",
+        c.consent_ip ?? "",
         mine.length,
         wins.length,
         wins.map((w) => rewardName(w.reward_id)).join(" | "),
@@ -393,6 +440,44 @@ function AdminPage() {
             ⬇️ Exporter les clients en CSV
           </motion.button>
         </div>
+        <div className="ink-border-thick rounded-3xl bg-white p-6 shadow-pop-ink">
+          <h3 className="mb-3 text-xs font-extrabold uppercase tracking-widest text-ink/60">
+            ⚙️ Informations légales (politique de confidentialité)
+          </h3>
+          <div className="space-y-3">
+            {SETTING_FIELDS.map((f) => (
+              <label key={f.key} className="block">
+                <span className="text-xs font-extrabold uppercase text-ink/60">{f.label}</span>
+                <input
+                  value={settings[f.key] ?? ""}
+                  onChange={(e) =>
+                    setSettings((prev) => ({ ...prev, [f.key]: e.target.value }))
+                  }
+                  className="ink-border mt-1 min-h-[48px] w-full rounded-full bg-yellow/30 px-4 font-bold outline-none"
+                />
+              </label>
+            ))}
+          </div>
+          <motion.button
+            whileHover={{ scale: 1.03, y: -2 }}
+            whileTap={{ scale: 0.97, y: 2 }}
+            onClick={handleSaveSettings}
+            disabled={savingSettings}
+            className="ink-border-thick mt-4 min-h-[52px] w-full rounded-full bg-pink px-5 font-extrabold uppercase text-white shadow-pop-ink"
+          >
+            {savingSettings ? "…" : "💾 Enregistrer les réglages"}
+          </motion.button>
+          {settingsMsg && <p className="mt-3 text-sm font-extrabold">{settingsMsg}</p>}
+          <a
+            href="/confidentialite"
+            target="_blank"
+            rel="noreferrer"
+            className="mt-3 inline-block text-xs font-extrabold uppercase tracking-widest text-ink/50 hover:text-ink"
+          >
+            👀 Voir la page politique de confidentialité
+          </a>
+        </div>
+
         <div className="ink-border-thick rounded-3xl bg-orange/15 p-6 shadow-pop-orange">
           <h3 className="mb-2 font-display text-xl font-extrabold text-orange-600">
             ⚠️ Zone dangereuse

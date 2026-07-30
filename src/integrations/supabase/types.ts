@@ -16,25 +16,37 @@ export type Database = {
     Tables: {
       clients: {
         Row: {
+          consent_at: string | null
+          consent_ip: string | null
           created_at: string
           email: string | null
           id: string
+          marketing_consent: boolean
           name: string | null
           phone: string | null
+          terms_accepted: boolean
         }
         Insert: {
+          consent_at?: string | null
+          consent_ip?: string | null
           created_at?: string
           email?: string | null
           id?: string
+          marketing_consent?: boolean
           name?: string | null
           phone?: string | null
+          terms_accepted?: boolean
         }
         Update: {
+          consent_at?: string | null
+          consent_ip?: string | null
           created_at?: string
           email?: string | null
           id?: string
+          marketing_consent?: boolean
           name?: string | null
           phone?: string | null
+          terms_accepted?: boolean
         }
         Relationships: []
       }
