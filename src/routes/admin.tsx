@@ -440,43 +440,6 @@ function AdminPage() {
             ⬇️ Exporter les clients en CSV
           </motion.button>
         </div>
-        <div className="ink-border-thick rounded-3xl bg-white p-6 shadow-pop-ink">
-          <h3 className="mb-3 text-xs font-extrabold uppercase tracking-widest text-ink/60">
-            ⚙️ Informations légales (politique de confidentialité)
-          </h3>
-          <div className="space-y-3">
-            {SETTING_FIELDS.map((f) => (
-              <label key={f.key} className="block">
-                <span className="text-xs font-extrabold uppercase text-ink/60">{f.label}</span>
-                <input
-                  value={settings[f.key] ?? ""}
-                  onChange={(e) =>
-                    setSettings((prev) => ({ ...prev, [f.key]: e.target.value }))
-                  }
-                  className="ink-border mt-1 min-h-[48px] w-full rounded-full bg-yellow/30 px-4 font-bold outline-none"
-                />
-              </label>
-            ))}
-          </div>
-          <motion.button
-            whileHover={{ scale: 1.03, y: -2 }}
-            whileTap={{ scale: 0.97, y: 2 }}
-            onClick={handleSaveSettings}
-            disabled={savingSettings}
-            className="ink-border-thick mt-4 min-h-[52px] w-full rounded-full bg-pink px-5 font-extrabold uppercase text-white shadow-pop-ink"
-          >
-            {savingSettings ? "…" : "💾 Enregistrer les réglages"}
-          </motion.button>
-          {settingsMsg && <p className="mt-3 text-sm font-extrabold">{settingsMsg}</p>}
-          <a
-            href="/confidentialite"
-            target="_blank"
-            rel="noreferrer"
-            className="mt-3 inline-block text-xs font-extrabold uppercase tracking-widest text-ink/50 hover:text-ink"
-          >
-            👀 Voir la page politique de confidentialité
-          </a>
-        </div>
 
         <div className="ink-border-thick rounded-3xl bg-orange/15 p-6 shadow-pop-orange">
           <h3 className="mb-2 font-display text-xl font-extrabold text-orange-600">
