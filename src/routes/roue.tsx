@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
 import confetti from "canvas-confetti";
@@ -61,6 +61,8 @@ function RouePage() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [contactSaved, setContactSaved] = useState(false);
+  const [terms, setTerms] = useState(false);
+  const [marketing, setMarketing] = useState(false);
   const [alreadySpun, setAlreadySpun] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [spinning, setSpinning] = useState(false);
@@ -118,9 +120,16 @@ function RouePage() {
   }, [segments, segAngle]);
 
   async function saveContact() {
-    if (!name.trim() || !phone.trim()) return;
+    if (!name.trim() || !phone.trim() || !terms) return;
     try {
-      const { id } = await createClientContact({ data: { name: name.trim(), phone: phone.trim() } });
+      const { id } = await createClientContact({
+        data: {
+          name: name.trim(),
+          phone: phone.trim(),
+          termsAccepted: true,
+          marketingConsent: marketing,
+        },
+      });
       localStorage.setItem("rollsy_client_id", id);
       setContactSaved(true);
     } catch {
@@ -188,12 +197,44 @@ function RouePage() {
             placeholder="Votre téléphone"
             className="ink-border mb-4 min-h-[52px] w-full rounded-full bg-yellow/30 px-5 font-bold outline-none"
           />
+          <label className="mb-3 flex cursor-pointer items-start gap-3 text-sm font-bold">
+            <input
+              type="checkbox"
+              checked={marketing}
+              onChange={(e) => setMarketing(e.target.checked)}
+              className="mt-1 h-5 w-5 shrink-0 accent-[#FF3DA6]"
+            />
+            <span>Oui, je veux mes prochaines offres en exclu par SMS 🎁</span>
+          </label>
+
+          <label className="mb-4 flex cursor-pointer items-start gap-3 text-sm font-bold">
+            <input
+              type="checkbox"
+              checked={terms}
+              onChange={(e) => setTerms(e.target.checked)}
+              className="mt-1 h-5 w-5 shrink-0 accent-[#FF3DA6]"
+            />
+            <span>
+              J'accepte les conditions générales d'utilisation et la{" "}
+              <Link to="/confidentialite" className="underline">
+                politique de confidentialité
+              </Link>
+              . <span className="text-pink">*</span>
+            </span>
+          </label>
+
           <button
             onClick={saveContact}
-            className="ink-border-thick min-h-[52px] w-full rounded-full bg-pink px-6 font-extrabold uppercase text-white shadow-pop-ink"
+            disabled={!terms || !name.trim() || !phone.trim()}
+            className="ink-border-thick min-h-[52px] w-full rounded-full bg-pink px-6 font-extrabold uppercase text-white shadow-pop-ink disabled:cursor-not-allowed disabled:opacity-40"
           >
             Continuer 🚀
           </button>
+          <p className="mt-3 text-center text-xs font-semibold text-ink/50">
+            <Link to="/confidentialite" className="underline">
+              Politique de confidentialité
+            </Link>
+          </p>
         </div>
       )}
 
