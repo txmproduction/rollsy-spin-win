@@ -99,7 +99,21 @@ function AdminPage() {
       }
       setLoading(false);
     })();
-  }, [unlocked, pwd]);
+  }, [unlocked, pwd, refreshKey]);
+
+  const handleReset = async () => {
+    setResetting(true);
+    setResetMsg("");
+    try {
+      await resetRollsyData({ data: { password: pwd } });
+      setConfirmReset(false);
+      setResetMsg("Données réinitialisées avec succès ✅");
+      setRefreshKey((k) => k + 1);
+    } catch {
+      setResetMsg("Échec de la réinitialisation ❌");
+    }
+    setResetting(false);
+  };
 
   const stats = useMemo(() => {
     const todayStart = startOfToday().getTime();
