@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { QRCodeCanvas } from "qrcode.react";
 import { motion } from "framer-motion";
-import { getAdminData, verifyAdminPassword, resetRollsyData, updateSettings } from "@/lib/rollsy.functions";
 
 type Spin = {
   id: string;
@@ -29,16 +28,6 @@ type Client = {
   consent_at?: string | null;
   consent_ip?: string | null;
 };
-
-const SETTING_FIELDS: { key: string; label: string }[] = [
-  { key: "business_name", label: "Nom du commerce" },
-  { key: "business_address", label: "Adresse du commerce" },
-  { key: "business_email", label: "Email de contact du commerce" },
-  { key: "agency_name", label: "Prestataire technique" },
-  { key: "agency_email", label: "Email du prestataire" },
-  { key: "agency_address", label: "Adresse du prestataire" },
-  { key: "agency_legal", label: "Mentions légales du prestataire" },
-];
 
 function startOfToday() {
   const d = new Date();
@@ -82,9 +71,6 @@ function AdminPage() {
   const [confirmReset, setConfirmReset] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [resetMsg, setResetMsg] = useState("");
-  const [settings, setSettings] = useState<Record<string, string>>({});
-  const [settingsMsg, setSettingsMsg] = useState("");
-  const [savingSettings, setSavingSettings] = useState(false);
   const qrWrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -110,7 +96,6 @@ function AdminPage() {
         setSpins(data.spins as Spin[]);
         setRewards(data.rewards as Reward[]);
         setClients(data.clients as Client[]);
-        setSettings((data.settings ?? {}) as Record<string, string>);
       } catch {
         setError("Session expirée, reconnectez-vous.");
         setUnlocked(false);
@@ -131,19 +116,6 @@ function AdminPage() {
       setResetMsg("Échec de la réinitialisation ❌");
     }
     setResetting(false);
-  };
-
-  const handleSaveSettings = async () => {
-    setSavingSettings(true);
-    setSettingsMsg("");
-    try {
-      await updateSettings({ data: { password: pwd, values: settings } });
-      setSettingsMsg("Réglages enregistrés ✅");
-      setRefreshKey((k) => k + 1);
-    } catch {
-      setSettingsMsg("Échec de l'enregistrement ❌");
-    }
-    setSavingSettings(false);
   };
 
   const stats = useMemo(() => {
