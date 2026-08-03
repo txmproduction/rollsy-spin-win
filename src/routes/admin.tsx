@@ -138,12 +138,20 @@ function AdminPage() {
       byReward.set(key, (byReward.get(key) || 0) + 1);
     }
 
-    const chicken = rewards.find((r) => /ailes de poulet/i.test(r.name));
-    const chickenWeek = chicken
-      ? wins.filter(
-          (w) => w.reward_id === chicken.id && new Date(w.created_at).getTime() >= weekStart,
-        ).length
-      : 0;
+    const quotas = rewards.map((r) => {
+      const periodStart = r.frequency === "week" ? weekStart : todayStart;
+      const won = wins.filter(
+        (w) => w.reward_id === r.id && new Date(w.created_at).getTime() >= periodStart,
+      ).length;
+      return {
+        id: r.id,
+        name: r.name,
+        frequency: r.frequency,
+        quota: r.quota,
+        won,
+        done: won >= r.quota,
+      };
+    });
 
     return {
       totalSpins: spins.length,
@@ -151,10 +159,10 @@ function AdminPage() {
       todaySpins: todaySpins.length,
       todayWins: todaySpins.filter((s) => s.result === "win").length,
       byReward: [...byReward.entries()].sort((a, b) => b[1] - a[1]),
-      chicken,
-      chickenWeek,
+      quotas,
     };
   }, [spins, rewards]);
+
 
   const exportClientsCsv = () => {
     const rewardName = (id: string | null) =>
@@ -391,19 +399,32 @@ function AdminPage() {
           )}
         </div>
 
-        {stats.chicken && (
-          <div className="ink-border-thick rounded-3xl bg-white p-6 shadow-pop-orange">
-            <h3 className="mb-2 text-xs font-extrabold uppercase tracking-widest text-ink/60">
-              🍗 {stats.chicken.name} — cette semaine
-            </h3>
-            <p className="font-display text-3xl font-extrabold">
-              {stats.chickenWeek}/{stats.chicken.quota} déjà gagné cette semaine
-            </p>
-            <p className="mt-1 text-sm font-bold text-ink/60">
-              Quota restant : {Math.max(0, stats.chicken.quota - stats.chickenWeek)}
-            </p>
-          </div>
-        )}
+        <div className="ink-border-thick rounded-3xl bg-white p-6 shadow-pop-orange">
+          <h3 className="mb-4 text-xs font-extrabold uppercase tracking-widest text-ink/60">
+            📊 Quotas en direct — cette semaine
+          </h3>
+          <ul className="space-y-3">
+            {stats.quotas.map((q) => (
+              <li
+                key={q.id}
+                className={`ink-border rounded-2xl px-4 py-3 ${q.done ? "bg-orange/30" : "bg-yellow/30"}`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-extrabold">{q.name}</span>
+                  <span className="font-display text-xl font-extrabold">
+                    {q.won}/{q.quota}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs font-bold text-ink/60">
+                  {q.done
+                    ? "Quota atteint ✅ — les clients tombent sur « Perdu »"
+                    : `Encore ${q.quota - q.won} disponible(s) cette ${q.frequency === "week" ? "semaine" : "journée"}`}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </div>
+
 
         <div className="ink-border-thick rounded-3xl bg-white p-6 shadow-pop-ink">
           <h3 className="mb-3 text-xs font-extrabold uppercase tracking-widest text-ink/60">
