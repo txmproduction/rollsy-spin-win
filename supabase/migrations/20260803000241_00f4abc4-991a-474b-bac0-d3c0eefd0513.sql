@@ -1,0 +1,3 @@
+UPDATE public.rewards SET name='Canette offerte', short_label='Canette', frequency='week', quota=3, quota_morning=NULL, quota_afternoon=NULL WHERE id='6e6501f4-c04e-4663-a110-09996c1a894b';
+UPDATE public.rewards SET name='1kg de pilon de poulet', short_label='1kg pilon', frequency='week', quota=1, quota_morning=NULL, quota_afternoon=NULL WHERE id='f1a609bc-7e92-4db4-a512-443a079712f4';
+UPDATE public.rewards SET frequency='week', quota=1, quota_morning=NULL, quota_afternoon=NULL WHERE id IN ('5cadbe68-ca0d-4a4e-8e7a-5b00184bf8f9','2dedf48c-5e8a-4bbc-b6c8-6671ca2b5b18');
