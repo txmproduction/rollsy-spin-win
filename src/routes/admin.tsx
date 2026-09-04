@@ -566,32 +566,18 @@ function AdminPage() {
           >
             Exporter les clients en CSV 📥
           </button>
-          <button
-            onClick={() => setShowPhones((v) => !v)}
-            className="ink-border min-h-[52px] rounded-full bg-white px-6 font-extrabold uppercase"
-          >
-            {showPhones ? "Masquer les numéros 🙈" : "Afficher les numéros 👁️"}
-          </button>
         </div>
         {data.clients.length === 0 ? (
           <p className="text-sm font-bold text-ink/70">Aucun client pour le moment.</p>
         ) : (
           <div className="max-h-80 space-y-2 overflow-y-auto">
             {data.clients.slice(0, 100).map((c) => (
-              <div
-                key={c.id}
-                className="ink-border flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-white px-4 py-3"
-              >
-                <span className="font-extrabold">{c.name ?? "—"}</span>
-                <span className="font-bold text-ink/70">
-                  {showPhones ? (c.phone ?? "—") : maskPhone(c.phone)}
-                </span>
-              </div>
+              <ClientRow key={c.id} client={c} />
             ))}
           </div>
         )}
         <p className="mt-3 text-xs font-bold text-ink/50">
-          Les numéros sont masqués par défaut. Ils restent complets dans l'export CSV.
+          Les numéros sont masqués par défaut. Cliquez sur l'œil pour afficher celui d'un client. Ils restent complets dans l'export CSV.
         </p>
       </Card>
 
