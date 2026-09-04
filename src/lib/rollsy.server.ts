@@ -565,12 +565,12 @@ export async function updateMerchantAccess(
 ) {
   await assertSuperAdmin(userId);
   const db = await admin();
-  const patch: Record<string, string | null> = { access_status: input.accessStatus };
-  if (input.accessStatus === "trial") {
-    const end = new Date();
-    end.setDate(end.getDate() + (input.trialDays ?? 14));
-    patch['trial_ends_at'] = end.toISOString();
-  }
+  const end = new Date();
+  end.setDate(end.getDate() + (input.trialDays ?? 14));
+  const patch =
+    input.accessStatus === "trial"
+      ? { access_status: input.accessStatus, trial_ends_at: end.toISOString() }
+      : { access_status: input.accessStatus };
   const { error } = await db.from("merchants").update(patch).eq("id", input.merchantId);
   if (error) {
     console.error("[rollsy] access update failed", error);
