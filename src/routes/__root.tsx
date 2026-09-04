@@ -8,6 +8,8 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 
+import { useEffect } from "react";
+
 import appCss from "../styles.css?url";
 
 function NotFoundComponent() {
@@ -84,9 +86,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:description", content: "Laissez un avis Google et tournez la roue pour gagner une récompense." },
       { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/1b06286a-3ef5-40a9-bcfb-d428a6faf3f6/id-preview-3a4f9a7f--205f0132-c082-4391-bec8-325b6b5d745c.lovable.app-1778344571950.png" },
       { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/1b06286a-3ef5-40a9-bcfb-d428a6faf3f6/id-preview-3a4f9a7f--205f0132-c082-4391-bec8-325b6b5d745c.lovable.app-1778344571950.png" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "apple-mobile-web-app-title", content: "Rollsy" },
+      { name: "theme-color", content: "#0b0b16" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
+      { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "icon", type: "image/png", href: "/favicon.png" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
@@ -94,6 +104,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: "https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800;900&display=swap",
       },
     ],
+
   }),
   shellComponent: RootShell,
   component: RootComponent,
@@ -118,9 +129,16 @@ function RootShell({ children }: { children: React.ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
+  useEffect(() => {
+    if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <Outlet />
     </QueryClientProvider>
   );
 }
+
