@@ -1,22 +1,25 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeader } from "@tanstack/react-start/server";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
   contactSchema,
   spinSchema,
-  passwordSchema,
-  settingsSchema,
+  slugSchema,
+  signupSchema,
+  setupSchema,
   insertClientContact,
   decideAndRecordSpin,
-  loadAdminData,
-  resetAllData,
-  adminPassword,
-  getPublicSettings,
-  saveSettings,
+  getPublicMerchant,
+  findMerchantByOwner,
+  ensureMerchantForUser,
+  saveMerchantSetup,
+  loadMerchantAdminData,
+  resetMerchantData,
 } from "./rollsy.server";
 
-export const resetRollsyData = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => passwordSchema.parse(data))
-  .handler(async ({ data }) => resetAllData(data.password));
+export const fetchMerchant = createServerFn({ method: "GET" })
+  .inputValidator((data: unknown) => slugSchema.parse(data))
+  .handler(async ({ data }) => getPublicMerchant(data.slug));
 
 export const createClientContact = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => contactSchema.parse(data))
@@ -28,20 +31,32 @@ export const createClientContact = createServerFn({ method: "POST" })
 
 export const spinWheel = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => spinSchema.parse(data))
-  .handler(async ({ data }) => decideAndRecordSpin(data.clientId ?? null));
+  .handler(async ({ data }) => decideAndRecordSpin(data.slug, data.clientId ?? null));
 
-export const getAdminData = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => passwordSchema.parse(data))
-  .handler(async ({ data }) => loadAdminData(data.password));
+// ---------- Authentifié (commerçant) ----------
 
-export const verifyAdminPassword = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => passwordSchema.parse(data))
-  .handler(async ({ data }) => ({ ok: data.password === adminPassword() }));
+export const getMyMerchant = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => findMerchantByOwner(context.userId));
 
-export const fetchPublicSettings = createServerFn({ method: "GET" }).handler(async () =>
-  getPublicSettings(),
-);
+export const completeSignup = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => signupSchema.partial().parse(data ?? {}))
+  .handler(async ({ context, data }) => {
+    const email = (context.claims.email as string) ?? data.email ?? "";
+    const profile = signupSchema.safeParse({ ...data, email });
+    return ensureMerchantForUser(context.userId, email, profile.success ? profile.data : null);
+  });
 
-export const updateSettings = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => settingsSchema.parse(data))
-  .handler(async ({ data }) => saveSettings(data.password, data.values));
+export const saveWheelSetup = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => setupSchema.parse(data))
+  .handler(async ({ context, data }) => saveMerchantSetup(context.userId, data));
+
+export const getMerchantAdminData = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => loadMerchantAdminData(context.userId));
+
+export const resetRollsyData = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => resetMerchantData(context.userId));
