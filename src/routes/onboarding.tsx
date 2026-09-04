@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AccessGate } from "@/components/AccessGate";
 import { completeSignup, saveWheelSetup } from "@/lib/rollsy.functions";
+import installIphone from "@/assets/install-iphone.png";
 
 export const Route = createFileRoute("/onboarding")({
   ssr: false,
@@ -51,6 +52,22 @@ function OnboardingPage() {
   const [logoPath, setLogoPath] = useState<string | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [installPrompt, setInstallPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const onPrompt = (e: Event) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+    window.addEventListener("beforeinstallprompt", onPrompt);
+    return () => window.removeEventListener("beforeinstallprompt", onPrompt);
+  }, []);
+
+  async function installNow() {
+    if (!installPrompt) return;
+    await installPrompt.prompt();
+    setInstallPrompt(null);
+  }
 
   async function handleLogoFile(file: File | null) {
     if (!file) return;
@@ -133,20 +150,61 @@ function OnboardingPage() {
   return (
     <main className="mx-auto max-w-lg px-4 py-12">
       <p className="mb-2 text-sm font-extrabold uppercase tracking-widest text-ink/60">
-        Étape {step} sur 4
+        Étape {step} sur 5
       </p>
       <h1 className="mb-8 font-display text-3xl font-extrabold">
         {step === 1
-          ? "Votre objectif 🎯"
+          ? "Installez l'application"
           : step === 2
-            ? "Vos récompenses 🎁"
+            ? "Votre objectif 🎯"
             : step === 3
-              ? "Fréquence des gains ⏱️"
-              : "Votre logo 🖼️"}
+              ? "Vos récompenses 🎁"
+              : step === 4
+                ? "Fréquence des gains ⏱️"
+                : "Votre logo 🖼️"}
       </h1>
 
       <div className="ink-border-thick rounded-3xl bg-white p-6 shadow-pop-pink">
         {step === 1 && (
+          <div className="text-center">
+            <p className="mb-4 text-sm font-bold text-ink/70">
+              Ajoutez Rollsy sur l'écran d'accueil de votre téléphone pour y accéder en un geste,
+              comme une vraie application.
+            </p>
+            <ol className="mb-5 space-y-2 text-left text-sm font-bold">
+              <li className="ink-border rounded-2xl bg-yellow/30 px-4 py-2">
+                1. Appuyez sur le bouton <span className="font-extrabold">Partager</span> en bas de
+                votre navigateur.
+              </li>
+              <li className="ink-border rounded-2xl bg-yellow/30 px-4 py-2">
+                2. Choisissez <span className="font-extrabold">Sur l'écran d'accueil</span>.
+              </li>
+              <li className="ink-border rounded-2xl bg-yellow/30 px-4 py-2">
+                3. Validez avec <span className="font-extrabold">Ajouter</span>.
+              </li>
+            </ol>
+            <img
+              src={installIphone}
+              alt="Téléphone montrant le bouton Partager puis Sur l'écran d'accueil"
+              width={912}
+              height={1104}
+              className="mx-auto w-full max-w-[260px]"
+            />
+            {installPrompt && (
+              <button
+                onClick={() => void installNow()}
+                className="ink-border-thick mt-5 min-h-[52px] w-full rounded-full bg-green px-4 font-extrabold uppercase text-white shadow-pop-ink"
+              >
+                Installer maintenant
+              </button>
+            )}
+            <p className="mt-3 text-xs font-bold text-ink/50">
+              Déjà fait ou sur ordinateur ? Continuez simplement.
+            </p>
+          </div>
+        )}
+
+        {step === 2 && (
           <>
             <div className="mb-4 grid grid-cols-2 gap-3">
               {GOALS.map((g) => (
@@ -192,7 +250,7 @@ function OnboardingPage() {
           </>
         )}
 
-        {step === 2 && (
+        {step === 3 && (
           <div className="mb-5">
             <p className="mb-2 text-sm font-extrabold">
               Voulez-vous que vos clients récupèrent leur récompense immédiatement ou lors de leur
@@ -222,7 +280,7 @@ function OnboardingPage() {
           </div>
         )}
 
-        {step === 2 &&
+        {step === 3 &&
           rewards.map((r, i) => (
             <div key={i} className="mb-3 flex gap-2">
               <input
@@ -247,7 +305,7 @@ function OnboardingPage() {
             </div>
           ))}
 
-        {step === 3 && (
+        {step === 4 && (
           <div>
           <p className="mb-2 font-extrabold">Réinitialisation du nombre de récompenses</p>
           <div className="grid grid-cols-2 gap-3">
@@ -266,7 +324,7 @@ function OnboardingPage() {
           </div>
         )}
 
-        {step === 4 && (
+        {step === 5 && (
           <div className="text-center">
             <p className="mb-4 text-sm font-bold text-ink/70">
               Ajoutez le logo de votre commerce : il s'affichera sur votre page de jeu, à la place
@@ -306,11 +364,11 @@ function OnboardingPage() {
             </button>
           )}
           <button
-            onClick={() => (step < 4 ? setStep(step + 1) : finish())}
+            onClick={() => (step < 5 ? setStep(step + 1) : finish())}
             disabled={saving || uploading}
             className="ink-border-thick min-h-[52px] flex-1 rounded-full bg-pink px-4 font-extrabold uppercase text-white shadow-pop-ink disabled:opacity-50"
           >
-            {step < 4 ? "Continuer →" : saving ? "Enregistrement..." : "Terminer 🎉"}
+            {step < 5 ? "Continuer →" : saving ? "Enregistrement..." : "Terminer 🎉"}
           </button>
         </div>
       </div>
