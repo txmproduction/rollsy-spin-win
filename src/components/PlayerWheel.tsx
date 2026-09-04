@@ -174,6 +174,14 @@ export default function PlayerWheel({ merchant }: { merchant: PublicMerchant }) 
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-8 px-4 py-10">
+      {merchant.logoUrl && (
+        <img
+          src={merchant.logoUrl}
+          alt={`Logo ${merchant.companyName}`}
+          className="ink-border-thick h-20 w-20 rounded-full bg-white object-contain p-2 shadow-pop-ink"
+        />
+      )}
+
       {!contactSaved && !alreadySpun && (
         <div className="ink-border-thick w-full max-w-sm rounded-3xl bg-white p-8 shadow-pop-pink">
           <h1 className="mb-4 font-display text-2xl font-extrabold">Avant de jouer 🎉</h1>

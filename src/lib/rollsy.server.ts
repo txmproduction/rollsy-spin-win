@@ -42,6 +42,7 @@ export const setupSchema = z.object({
     .min(2)
     .max(8),
   rewardMode: z.enum(["immediate", "next_visit"]).optional(),
+  logoPath: z.string().trim().max(300).nullable().optional(),
   completeOnboarding: z.boolean().optional(),
 });
 
@@ -105,14 +106,24 @@ export type PublicMerchant = {
   goalUrl: string | null;
   goalLabel: string;
   rewardMode: "immediate" | "next_visit";
+  logoUrl: string | null;
   rewards: { id: string; name: string; short_label: string | null }[];
 };
+
+export const LOGO_BUCKET = "merchant-logos";
+
+export async function signedLogoUrl(path: string | null | undefined) {
+  if (!path) return null;
+  const db = await admin();
+  const { data } = await db.storage.from(LOGO_BUCKET).createSignedUrl(path, 60 * 60 * 24 * 7);
+  return data?.signedUrl ?? null;
+}
 
 export async function getPublicMerchant(slug: string): Promise<PublicMerchant | null> {
   const db = await admin();
   const { data: m } = await db
     .from("merchants")
-    .select("id, slug, company_name, goal_type, goal_url, reward_mode")
+    .select("id, slug, company_name, goal_type, goal_url, reward_mode, logo_path")
     .eq("slug", slug)
     .maybeSingle();
   if (!m) return null;
@@ -130,6 +141,7 @@ export async function getPublicMerchant(slug: string): Promise<PublicMerchant | 
     goalUrl: (m.goal_url as string) ?? null,
     goalLabel: goalLabel(m.goal_type as string),
     rewardMode: (m.reward_mode as string) === "next_visit" ? "next_visit" : "immediate",
+    logoUrl: await signedLogoUrl(m.logo_path as string | null),
     rewards: (rewards ?? []) as PublicMerchant["rewards"],
   };
 }
@@ -244,7 +256,7 @@ export async function findMerchantByOwner(userId: string) {
   const { data } = await db
     .from("merchants")
     .select(
-      "id, slug, company_name, first_name, last_name, phone, email, goal_type, goal_url, reward_mode, status, onboarding_completed, trial_ends_at",
+      "id, slug, company_name, first_name, last_name, phone, email, goal_type, goal_url, reward_mode, logo_path, status, onboarding_completed, trial_ends_at",
     )
     .eq("owner_id", userId)
     .maybeSingle();
@@ -287,7 +299,7 @@ export async function ensureMerchantForUser(
       trial_ends_at: trialEnds.toISOString(),
     })
     .select(
-      "id, slug, company_name, first_name, last_name, phone, email, goal_type, goal_url, reward_mode, status, onboarding_completed, trial_ends_at",
+      "id, slug, company_name, first_name, last_name, phone, email, goal_type, goal_url, reward_mode, logo_path, status, onboarding_completed, trial_ends_at",
     )
     .single();
   if (error || !data) {
@@ -313,6 +325,7 @@ export async function saveMerchantSetup(userId: string, input: z.infer<typeof se
       goal_type: input.goalType,
       goal_url: input.goalUrl,
       ...(input.rewardMode ? { reward_mode: input.rewardMode } : {}),
+      ...(input.logoPath !== undefined ? { logo_path: input.logoPath } : {}),
       ...(input.completeOnboarding ? { onboarding_completed: true } : {}),
     })
     .eq("id", m.id);
@@ -368,6 +381,7 @@ export async function loadMerchantAdminData(userId: string) {
 
   return {
     merchant: m,
+    logoUrl: await signedLogoUrl((m as { logo_path?: string | null }).logo_path ?? null),
     spins: spins.data ?? [],
     rewards: rewards.data ?? [],
     clients: clients.data ?? [],
