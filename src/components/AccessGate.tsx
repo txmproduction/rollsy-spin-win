@@ -12,16 +12,16 @@ type AccessState = Awaited<ReturnType<typeof getMyAccessState>>;
 
 export function TrialBanner({ daysLeft }: { daysLeft: number }) {
   return (
-    <div className="sticky top-0 z-50 flex flex-wrap items-center justify-center gap-3 border-b-2 border-ink bg-yellow px-4 py-3 text-center">
-      <span className="font-extrabold">
-        ⏳ Essai gratuit : {daysLeft} jour{daysLeft > 1 ? "s" : ""} restant
+    <div className="sticky top-0 z-50 flex items-center justify-center gap-2 border-b border-ink/20 bg-yellow/90 px-3 py-1.5 text-center text-xs">
+      <span className="font-medium">
+        Essai gratuit : {daysLeft} jour{daysLeft > 1 ? "s" : ""} restant
         {daysLeft > 1 ? "s" : ""}
       </span>
       <a
         href={whatsappLink("Je souhaite passer à la version complète")}
         target="_blank"
         rel="noreferrer"
-        className="ink-border rounded-full bg-white px-4 py-2 text-sm font-extrabold hover:bg-white/70"
+        className="rounded-full bg-white px-2.5 py-0.5 font-semibold hover:bg-white/70"
       >
         Passer à la version complète →
       </a>
