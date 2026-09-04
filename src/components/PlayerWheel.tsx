@@ -38,7 +38,9 @@ export default function PlayerWheel({ merchant }: { merchant: PublicMerchant }) 
 
   const [ready, setReady] = useState(false);
   const [name, setName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [contactSaved, setContactSaved] = useState(false);
   const [terms, setTerms] = useState(false);
   const [marketing, setMarketing] = useState(false);
