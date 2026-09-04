@@ -38,7 +38,9 @@ export default function PlayerWheel({ merchant }: { merchant: PublicMerchant }) 
 
   const [ready, setReady] = useState(false);
   const [name, setName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [contactSaved, setContactSaved] = useState(false);
   const [terms, setTerms] = useState(false);
   const [marketing, setMarketing] = useState(false);
@@ -93,13 +95,21 @@ export default function PlayerWheel({ merchant }: { merchant: PublicMerchant }) 
     return `conic-gradient(${stops})`;
   }, [segments, segAngle]);
 
+  const phoneDigits = phone.replace(/\D/g, "");
+  const phoneValid = phoneDigits.length >= 9 && phoneDigits.length <= 15;
+
   async function saveContact() {
-    if (!name.trim() || !phone.trim() || !terms) return;
+    if (!name.trim() || !lastName.trim() || !terms) return;
+    if (!phoneValid) {
+      setPhoneError("Entrez un numéro de téléphone valide (ex. 06 12 34 56 78).");
+      return;
+    }
+    setPhoneError(null);
     try {
       const { id } = await createClientContact({
         data: {
           slug: merchant.slug,
-          name: name.trim(),
+          name: `${name.trim()} ${lastName.trim()}`,
           phone: phone.trim(),
           termsAccepted: true,
           marketingConsent: marketing,
@@ -189,14 +199,32 @@ export default function PlayerWheel({ merchant }: { merchant: PublicMerchant }) 
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Votre prénom"
+            autoComplete="given-name"
             className="ink-border mb-3 min-h-[52px] w-full rounded-full bg-yellow/30 px-5 font-bold outline-none"
           />
           <input
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="Votre téléphone"
-            className="ink-border mb-4 min-h-[52px] w-full rounded-full bg-yellow/30 px-5 font-bold outline-none"
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            placeholder="Votre nom"
+            autoComplete="family-name"
+            className="ink-border mb-3 min-h-[52px] w-full rounded-full bg-yellow/30 px-5 font-bold outline-none"
           />
+          <input
+            type="tel"
+            inputMode="tel"
+            value={phone}
+            onChange={(e) => {
+              setPhone(e.target.value.replace(/[^\d+ .-]/g, ""));
+              setPhoneError(null);
+            }}
+            placeholder="Votre téléphone (06 12 34 56 78)"
+            autoComplete="tel"
+            className="ink-border mb-2 min-h-[52px] w-full rounded-full bg-yellow/30 px-5 font-bold outline-none"
+          />
+          {phoneError && (
+            <p className="mb-3 text-sm font-extrabold text-red-600">{phoneError}</p>
+          )}
+
           <label className="mb-3 flex cursor-pointer items-start gap-3 text-sm font-bold">
             <input
               type="checkbox"
@@ -225,7 +253,7 @@ export default function PlayerWheel({ merchant }: { merchant: PublicMerchant }) 
 
           <button
             onClick={saveContact}
-            disabled={!terms || !name.trim() || !phone.trim()}
+            disabled={!terms || !name.trim() || !lastName.trim() || !phoneValid}
             className="ink-border-thick min-h-[52px] w-full rounded-full bg-pink px-6 font-extrabold uppercase text-white shadow-pop-ink disabled:cursor-not-allowed disabled:opacity-40"
           >
             Continuer 🚀
