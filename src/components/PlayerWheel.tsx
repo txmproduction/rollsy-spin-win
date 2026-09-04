@@ -95,13 +95,21 @@ export default function PlayerWheel({ merchant }: { merchant: PublicMerchant }) 
     return `conic-gradient(${stops})`;
   }, [segments, segAngle]);
 
+  const phoneDigits = phone.replace(/\D/g, "");
+  const phoneValid = phoneDigits.length >= 9 && phoneDigits.length <= 15;
+
   async function saveContact() {
-    if (!name.trim() || !phone.trim() || !terms) return;
+    if (!name.trim() || !lastName.trim() || !terms) return;
+    if (!phoneValid) {
+      setPhoneError("Entrez un numéro de téléphone valide (ex. 06 12 34 56 78).");
+      return;
+    }
+    setPhoneError(null);
     try {
       const { id } = await createClientContact({
         data: {
           slug: merchant.slug,
-          name: name.trim(),
+          name: `${name.trim()} ${lastName.trim()}`,
           phone: phone.trim(),
           termsAccepted: true,
           marketingConsent: marketing,
