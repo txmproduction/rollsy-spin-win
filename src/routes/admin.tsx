@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { QRCodeCanvas } from "qrcode.react";
 import { supabase } from "@/integrations/supabase/client";
 import { AccessGate } from "@/components/AccessGate";
+import { AdminNotifications } from "@/components/AdminNotifications";
 import {
   getMerchantAdminData,
   resetRollsyData,
@@ -367,6 +368,7 @@ function AdminPage() {
           <p className="font-bold text-ink/60">Espace commerçant Rollsy</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {isSuper && <AdminNotifications />}
           {isSuper && (
             <Link
               to="/super-admin"

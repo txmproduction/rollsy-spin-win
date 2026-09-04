@@ -314,6 +314,12 @@ export async function ensureMerchantForUser(
     console.error("[rollsy] ensureMerchantForUser failed", error);
     throw new Error("Impossible de créer votre espace commerçant.");
   }
+  await recordAdminEvent(
+    "trial_started",
+    "Nouvel essai gratuit",
+    `${(data.company_name as string) ?? email} vient de créer un compte (essai gratuit de 14 jours).`,
+    data.id as string,
+  );
   return data;
 }
 
@@ -360,6 +366,14 @@ export async function saveMerchantSetup(userId: string, input: z.infer<typeof se
   if (insErr) {
     console.error("[rollsy] rewards insert failed", insErr);
     throw new Error("Échec de la mise à jour des récompenses.");
+  }
+  if (input.completeOnboarding && !m.onboarding_completed) {
+    await recordAdminEvent(
+      "wheel_created",
+      "Nouvelle roue créée",
+      `${(m.company_name as string) ?? "Un commerçant"} vient de configurer sa roue (${input.rewards.length} récompenses).`,
+      m.id as string,
+    );
   }
   return { ok: true as const, slug: m.slug as string };
 }
@@ -576,5 +590,58 @@ export async function updateMerchantAccess(
     console.error("[rollsy] access update failed", error);
     throw new Error("Impossible de modifier l'accès de ce commerçant.");
   }
+  return { ok: true as const };
+}
+
+// ---------- Notifications administrateur ----------
+
+export type AdminNotification = {
+  id: string;
+  type: string;
+  title: string;
+  body: string;
+  createdAt: string;
+  readAt: string | null;
+};
+
+export async function recordAdminEvent(
+  type: string,
+  title: string,
+  body: string,
+  merchantId: string | null,
+) {
+  try {
+    const db = await admin();
+    await db.from("admin_notifications").insert({ type, title, body, merchant_id: merchantId });
+  } catch (e) {
+    console.error("[rollsy] admin notification failed", e);
+  }
+}
+
+export async function listAdminNotifications(userId: string): Promise<AdminNotification[]> {
+  await assertSuperAdmin(userId);
+  const db = await admin();
+  const { data } = await db
+    .from("admin_notifications")
+    .select("id, type, title, body, created_at, read_at")
+    .order("created_at", { ascending: false })
+    .limit(50);
+  return (data ?? []).map((n) => ({
+    id: n.id as string,
+    type: n.type as string,
+    title: n.title as string,
+    body: n.body as string,
+    createdAt: n.created_at as string,
+    readAt: (n.read_at as string | null) ?? null,
+  }));
+}
+
+export async function markAdminNotificationsRead(userId: string) {
+  await assertSuperAdmin(userId);
+  const db = await admin();
+  await db
+    .from("admin_notifications")
+    .update({ read_at: new Date().toISOString() })
+    .is("read_at", null);
   return { ok: true as const };
 }

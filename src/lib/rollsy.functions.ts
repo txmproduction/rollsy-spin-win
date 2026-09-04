@@ -22,6 +22,8 @@ import {
   updateMerchantAccess,
   accessUpdateSchema,
   assertSuperAdmin,
+  listAdminNotifications,
+  markAdminNotificationsRead,
 } from "./rollsy.server";
 
 export const fetchMerchant = createServerFn({ method: "GET" })
@@ -98,3 +100,17 @@ export const setMerchantAccess = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => accessUpdateSchema.parse(data))
   .handler(async ({ context, data }) => updateMerchantAccess(context.userId, data));
+
+export const fetchAdminNotifications = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    try {
+      return await listAdminNotifications(context.userId);
+    } catch {
+      return [];
+    }
+  });
+
+export const readAdminNotifications = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => markAdminNotificationsRead(context.userId));
