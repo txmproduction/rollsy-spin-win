@@ -359,17 +359,28 @@ function AdminPage() {
           <h1 className="font-display text-3xl font-extrabold">{data.merchant.company_name}</h1>
           <p className="font-bold text-ink/60">Espace commerçant Rollsy</p>
         </div>
-        <button
-          onClick={async () => {
-            await supabase.auth.signOut();
-            setSignedIn(false);
-            setData(null);
-          }}
-          className="ink-border min-h-[44px] rounded-full bg-white px-5 font-extrabold uppercase"
-        >
-          Déconnexion
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          {isSuper && (
+            <Link
+              to="/super-admin"
+              className="ink-border min-h-[44px] rounded-full bg-yellow px-5 font-extrabold uppercase leading-[44px]"
+            >
+              👑 Super admin
+            </Link>
+          )}
+          <button
+            onClick={async () => {
+              await supabase.auth.signOut();
+              setSignedIn(false);
+              setData(null);
+            }}
+            className="ink-border min-h-[44px] rounded-full bg-white px-5 font-extrabold uppercase"
+          >
+            Déconnexion
+          </button>
+        </div>
       </div>
+
 
       {stats && (
         <Card title="Statistiques">
