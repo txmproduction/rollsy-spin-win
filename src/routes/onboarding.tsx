@@ -248,6 +248,8 @@ function OnboardingPage() {
           ))}
 
         {step === 3 && (
+          <div>
+          <p className="mb-2 font-extrabold">Réinitialisation du nombre de récompenses</p>
           <div className="grid grid-cols-2 gap-3">
             {(["day", "week"] as const).map((f) => (
               <button
@@ -260,6 +262,7 @@ function OnboardingPage() {
                 {f === "day" ? "Par jour ☀️" : "Par semaine 📅"}
               </button>
             ))}
+          </div>
           </div>
         )}
 

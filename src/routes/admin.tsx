@@ -486,6 +486,7 @@ function AdminPage() {
             className="ink-border min-h-[52px] w-full rounded-full bg-yellow/30 px-5 font-bold outline-none"
           />
         </label>
+        <p className="mb-2 font-extrabold">Réinitialisation du nombre de récompenses</p>
         <div className="mb-4 grid grid-cols-2 gap-3">
           {(["day", "week"] as const).map((f) => (
             <button
