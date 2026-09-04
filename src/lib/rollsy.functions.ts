@@ -17,6 +17,11 @@ import {
   loadMerchantAdminData,
   resetMerchantData,
   setSpinCodeUsed,
+  getAccessStateForUser,
+  listAllMerchants,
+  updateMerchantAccess,
+  accessUpdateSchema,
+  assertSuperAdmin,
 } from "./rollsy.server";
 
 export const fetchMerchant = createServerFn({ method: "GET" })
@@ -67,3 +72,29 @@ export const markSpinCodeUsed = createServerFn({ method: "POST" })
 export const resetRollsyData = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => resetMerchantData(context.userId));
+
+// ---------- Accès & super admin ----------
+
+export const getMyAccessState = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => getAccessStateForUser(context.userId));
+
+export const amISuperAdmin = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    try {
+      await assertSuperAdmin(context.userId);
+      return { superAdmin: true as const };
+    } catch {
+      return { superAdmin: false as const };
+    }
+  });
+
+export const listMerchantsForSuperAdmin = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => listAllMerchants(context.userId));
+
+export const setMerchantAccess = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => accessUpdateSchema.parse(data))
+  .handler(async ({ context, data }) => updateMerchantAccess(context.userId, data));

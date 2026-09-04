@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AccesSuspenduRouteImport } from './routes/acces-suspendu'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as CgvRouteImport } from './routes/cgv'
 import { Route as ConfidentialiteRouteImport } from './routes/confidentialite'
@@ -17,12 +18,18 @@ import { Route as ConfirmationRouteImport } from './routes/confirmation'
 import { Route as InscriptionRouteImport } from './routes/inscription'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as RoueRouteImport } from './routes/roue'
+import { Route as SuperAdminRouteImport } from './routes/super-admin'
 import { Route as MSlugIndexRouteImport } from './routes/m.$slug.index'
 import { Route as MSlugRoueRouteImport } from './routes/m.$slug.roue'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccesSuspenduRoute = AccesSuspenduRouteImport.update({
+  id: '/acces-suspendu',
+  path: '/acces-suspendu',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -60,6 +67,11 @@ const RoueRoute = RoueRouteImport.update({
   path: '/roue',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SuperAdminRoute = SuperAdminRouteImport.update({
+  id: '/super-admin',
+  path: '/super-admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MSlugIndexRoute = MSlugIndexRouteImport.update({
   id: '/m/$slug/',
   path: '/m/$slug/',
@@ -73,6 +85,7 @@ const MSlugRoueRoute = MSlugRoueRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/acces-suspendu': typeof AccesSuspenduRoute
   '/admin': typeof AdminRoute
   '/cgv': typeof CgvRoute
   '/confidentialite': typeof ConfidentialiteRoute
@@ -80,11 +93,13 @@ export interface FileRoutesByFullPath {
   '/inscription': typeof InscriptionRoute
   '/onboarding': typeof OnboardingRoute
   '/roue': typeof RoueRoute
+  '/super-admin': typeof SuperAdminRoute
   '/m/$slug/roue': typeof MSlugRoueRoute
   '/m/$slug/': typeof MSlugIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/acces-suspendu': typeof AccesSuspenduRoute
   '/admin': typeof AdminRoute
   '/cgv': typeof CgvRoute
   '/confidentialite': typeof ConfidentialiteRoute
@@ -92,12 +107,14 @@ export interface FileRoutesByTo {
   '/inscription': typeof InscriptionRoute
   '/onboarding': typeof OnboardingRoute
   '/roue': typeof RoueRoute
+  '/super-admin': typeof SuperAdminRoute
   '/m/$slug/roue': typeof MSlugRoueRoute
   '/m/$slug': typeof MSlugIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/acces-suspendu': typeof AccesSuspenduRoute
   '/admin': typeof AdminRoute
   '/cgv': typeof CgvRoute
   '/confidentialite': typeof ConfidentialiteRoute
@@ -105,6 +122,7 @@ export interface FileRoutesById {
   '/inscription': typeof InscriptionRoute
   '/onboarding': typeof OnboardingRoute
   '/roue': typeof RoueRoute
+  '/super-admin': typeof SuperAdminRoute
   '/m/$slug/roue': typeof MSlugRoueRoute
   '/m/$slug/': typeof MSlugIndexRoute
 }
@@ -112,6 +130,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/acces-suspendu'
     | '/admin'
     | '/cgv'
     | '/confidentialite'
@@ -119,11 +138,13 @@ export interface FileRouteTypes {
     | '/inscription'
     | '/onboarding'
     | '/roue'
+    | '/super-admin'
     | '/m/$slug/roue'
     | '/m/$slug/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/acces-suspendu'
     | '/admin'
     | '/cgv'
     | '/confidentialite'
@@ -131,11 +152,13 @@ export interface FileRouteTypes {
     | '/inscription'
     | '/onboarding'
     | '/roue'
+    | '/super-admin'
     | '/m/$slug/roue'
     | '/m/$slug'
   id:
     | '__root__'
     | '/'
+    | '/acces-suspendu'
     | '/admin'
     | '/cgv'
     | '/confidentialite'
@@ -143,12 +166,14 @@ export interface FileRouteTypes {
     | '/inscription'
     | '/onboarding'
     | '/roue'
+    | '/super-admin'
     | '/m/$slug/roue'
     | '/m/$slug/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AccesSuspenduRoute: typeof AccesSuspenduRoute
   AdminRoute: typeof AdminRoute
   CgvRoute: typeof CgvRoute
   ConfidentialiteRoute: typeof ConfidentialiteRoute
@@ -156,6 +181,7 @@ export interface RootRouteChildren {
   InscriptionRoute: typeof InscriptionRoute
   OnboardingRoute: typeof OnboardingRoute
   RoueRoute: typeof RoueRoute
+  SuperAdminRoute: typeof SuperAdminRoute
   MSlugRoueRoute: typeof MSlugRoueRoute
   MSlugIndexRoute: typeof MSlugIndexRoute
 }
@@ -167,6 +193,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/acces-suspendu': {
+      id: '/acces-suspendu'
+      path: '/acces-suspendu'
+      fullPath: '/acces-suspendu'
+      preLoaderRoute: typeof AccesSuspenduRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -218,6 +251,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RoueRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/super-admin': {
+      id: '/super-admin'
+      path: '/super-admin'
+      fullPath: '/super-admin'
+      preLoaderRoute: typeof SuperAdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/m/$slug/': {
       id: '/m/$slug/'
       path: '/m/$slug'
@@ -237,6 +277,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AccesSuspenduRoute: AccesSuspenduRoute,
   AdminRoute: AdminRoute,
   CgvRoute: CgvRoute,
   ConfidentialiteRoute: ConfidentialiteRoute,
@@ -244,6 +285,7 @@ const rootRouteChildren: RootRouteChildren = {
   InscriptionRoute: InscriptionRoute,
   OnboardingRoute: OnboardingRoute,
   RoueRoute: RoueRoute,
+  SuperAdminRoute: SuperAdminRoute,
   MSlugRoueRoute: MSlugRoueRoute,
   MSlugIndexRoute: MSlugIndexRoute,
 }

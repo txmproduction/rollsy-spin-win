@@ -63,6 +63,7 @@ export type Database = {
       }
       merchants: {
         Row: {
+          access_status: string
           cgv_accepted_at: string | null
           company_name: string
           created_at: string
@@ -82,6 +83,7 @@ export type Database = {
           trial_ends_at: string | null
         }
         Insert: {
+          access_status?: string
           cgv_accepted_at?: string | null
           company_name: string
           created_at?: string
@@ -101,6 +103,7 @@ export type Database = {
           trial_ends_at?: string | null
         }
         Update: {
+          access_status?: string
           cgv_accepted_at?: string | null
           company_name?: string
           created_at?: string
@@ -118,6 +121,30 @@ export type Database = {
           slug?: string
           status?: string
           trial_ends_at?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          is_super_admin: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id: string
+          is_super_admin?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_super_admin?: boolean
+          updated_at?: string
         }
         Relationships: []
       }
@@ -243,7 +270,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_super_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
