@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AccesSuspenduRouteImport } from './routes/acces-suspendu'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as CgvRouteImport } from './routes/cgv'
 import { Route as ConfidentialiteRouteImport } from './routes/confidentialite'
@@ -23,6 +24,11 @@ import { Route as MSlugRoueRouteImport } from './routes/m.$slug.roue'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccesSuspenduRoute = AccesSuspenduRouteImport.update({
+  id: '/acces-suspendu',
+  path: '/acces-suspendu',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -73,6 +79,7 @@ const MSlugRoueRoute = MSlugRoueRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/acces-suspendu': typeof AccesSuspenduRoute
   '/admin': typeof AdminRoute
   '/cgv': typeof CgvRoute
   '/confidentialite': typeof ConfidentialiteRoute
@@ -85,6 +92,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/acces-suspendu': typeof AccesSuspenduRoute
   '/admin': typeof AdminRoute
   '/cgv': typeof CgvRoute
   '/confidentialite': typeof ConfidentialiteRoute
@@ -98,6 +106,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/acces-suspendu': typeof AccesSuspenduRoute
   '/admin': typeof AdminRoute
   '/cgv': typeof CgvRoute
   '/confidentialite': typeof ConfidentialiteRoute
@@ -112,6 +121,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/acces-suspendu'
     | '/admin'
     | '/cgv'
     | '/confidentialite'
@@ -124,6 +134,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/acces-suspendu'
     | '/admin'
     | '/cgv'
     | '/confidentialite'
@@ -136,6 +147,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/acces-suspendu'
     | '/admin'
     | '/cgv'
     | '/confidentialite'
@@ -149,6 +161,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AccesSuspenduRoute: typeof AccesSuspenduRoute
   AdminRoute: typeof AdminRoute
   CgvRoute: typeof CgvRoute
   ConfidentialiteRoute: typeof ConfidentialiteRoute
@@ -167,6 +180,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/acces-suspendu': {
+      id: '/acces-suspendu'
+      path: '/acces-suspendu'
+      fullPath: '/acces-suspendu'
+      preLoaderRoute: typeof AccesSuspenduRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -237,6 +257,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AccesSuspenduRoute: AccesSuspenduRoute,
   AdminRoute: AdminRoute,
   CgvRoute: CgvRoute,
   ConfidentialiteRoute: ConfidentialiteRoute,
