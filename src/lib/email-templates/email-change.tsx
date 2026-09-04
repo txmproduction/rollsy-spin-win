@@ -30,34 +30,35 @@ export const EmailChangeEmail = ({
   newEmail,
   confirmationUrl,
 }: EmailChangeEmailProps) => (
-  <Html lang="en" dir="ltr">
+  <Html lang="fr" dir="ltr">
     <Head>
       <style>{darkModeCss}</style>
     </Head>
-    <Preview>Confirm your email change for {siteName}</Preview>
+    <Preview>Confirmez le changement d'adresse e-mail pour {siteName}</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>Confirm your email change</Heading>
+        <Text style={brand}>Rollsy</Text>
+        <Heading style={h1}>Confirmez votre nouvelle adresse</Heading>
         <Text style={text}>
-          You requested to change your email address for {siteName} from{' '}
+          Vous avez demandé à changer votre adresse e-mail {siteName} de{' '}
           <Link href={`mailto:${oldEmail}`} style={link}>
             {oldEmail}
           </Link>{' '}
-          to{' '}
+          vers{' '}
           <Link href={`mailto:${newEmail}`} style={link}>
             {newEmail}
           </Link>
           .
         </Text>
         <Text style={text}>
-          Click the button below to confirm this change:
+          Cliquez sur le bouton ci-dessous pour confirmer ce changement :
         </Text>
         <Button className="dm-btn" style={button} href={confirmationUrl}>
-          Confirm Email Change
+          Confirmer le changement
         </Button>
         <Text style={footer}>
-          If you didn't request this change, please secure your account
-          immediately.
+          Si vous n'êtes pas à l'origine de cette demande, sécurisez votre compte
+          immédiatement.
         </Text>
       </Container>
     </Body>
@@ -66,36 +67,54 @@ export const EmailChangeEmail = ({
 
 export default EmailChangeEmail
 
-const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }
-const container = { padding: '20px 25px' }
-const h1 = {
-  fontSize: '22px',
+const main = {
+  backgroundColor: '#ffffff',
+  fontFamily: "'Nunito', 'Trebuchet MS', Arial, sans-serif",
+}
+const container = {
+  padding: '28px 26px',
+  maxWidth: '560px',
+  border: '3px solid #1a1a1a',
+  borderRadius: '24px',
+  backgroundColor: '#ffffff',
+}
+const brand = {
+  fontSize: '13px',
   fontWeight: 'bold' as const,
-  color: '#000000',
+  letterSpacing: '2px',
+  textTransform: 'uppercase' as const,
+  color: '#FF3DA6',
+  margin: '0 0 6px',
+}
+const h1 = {
+  fontSize: '24px',
+  fontWeight: 'bold' as const,
+  color: '#1a1a1a',
   margin: '0 0 20px',
 }
 const text = {
-  fontSize: '14px',
-  color: '#55575d',
-  lineHeight: '1.5',
-  margin: '0 0 25px',
+  fontSize: '15px',
+  color: '#3a3a3a',
+  lineHeight: '1.6',
+  margin: '0 0 22px',
 }
-const link = { color: 'inherit', textDecoration: 'underline' }
+const link = { color: '#FF3DA6', textDecoration: 'underline' }
 const button = {
-  backgroundColor: '#000000',
+  backgroundColor: '#FF3DA6',
   color: '#ffffff',
-  fontSize: '14px',
-  border: '1px solid #000000',
-  borderRadius: '8px',
-  padding: '12px 20px',
+  fontSize: '15px',
+  fontWeight: 'bold' as const,
+  border: '3px solid #1a1a1a',
+  borderRadius: '999px',
+  padding: '13px 26px',
   textDecoration: 'none',
 }
-const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }
+const footer = { fontSize: '12px', color: '#8a8a8a', margin: '28px 0 0' }
 // Rendered as a text child, which React may HTML-escape: keep this CSS free of >, &, and quotes.
 const darkModeCss = `
   @media (prefers-color-scheme: dark) {
-    .dm-btn { background-color: #ffffff !important; color: #000000 !important; }
+    .dm-btn { background-color: #FF3DA6 !important; color: #ffffff !important; }
   }
-  [data-ogsc] .dm-btn { background-color: #ffffff !important; color: #000000 !important; }
-  [data-ogsb] .dm-btn { background-color: #ffffff !important; color: #000000 !important; }
+  [data-ogsc] .dm-btn { background-color: #FF3DA6 !important; color: #ffffff !important; }
+  [data-ogsb] .dm-btn { background-color: #FF3DA6 !important; color: #ffffff !important; }
 `
