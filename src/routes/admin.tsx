@@ -1,503 +1,436 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { QRCodeCanvas } from "qrcode.react";
-import { motion } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
 import {
-  getAdminData,
+  getMerchantAdminData,
   resetRollsyData,
-  verifyAdminPassword,
+  saveWheelSetup,
+  completeSignup,
 } from "@/lib/rollsy.functions";
 
-
-type Spin = {
-  id: string;
-  client_id: string | null;
-  reward_id: string | null;
-  result: string;
-  created_at: string;
-};
-type Reward = {
-  id: string;
-  name: string;
-  short_label: string | null;
-  frequency: string;
-  quota: number;
-};
-type Client = {
-  id: string;
-  name: string | null;
-  phone: string | null;
-  email: string | null;
-  created_at: string;
-  terms_accepted?: boolean | null;
-  marketing_consent?: boolean | null;
-  consent_at?: string | null;
-  consent_ip?: string | null;
-};
-
-function startOfToday() {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-function startOfWeek() {
-  const d = startOfToday();
-  const day = (d.getDay() + 6) % 7; // lundi = 0
-  d.setDate(d.getDate() - day);
-  return d;
-}
-function csvCell(v: unknown) {
-  const s = v == null ? "" : String(v);
-  return `"${s.replace(/"/g, '""')}"`;
-}
-
-const GOOGLE_REVIEW_URL = "https://g.page/r/CUpOjpZbm_0kEAE/review";
-
 export const Route = createFileRoute("/admin")({
+  ssr: false,
   head: () => ({
     meta: [
-      { title: "Admin 🔐 — Rollsy" },
-      { name: "description", content: "Espace administrateur Rollsy." },
-      { name: "robots", content: "noindex,nofollow" },
+      { title: "Espace commerçant — Rollsy" },
+      { name: "description", content: "Statistiques, QR code et configuration de votre roue Rollsy." },
+      { property: "og:title", content: "Espace commerçant — Rollsy" },
+      { property: "og:description", content: "Suivez vos avis, vos gains et configurez votre roue." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: AdminPage,
 });
 
+type AdminData = Awaited<ReturnType<typeof getMerchantAdminData>>;
+
+const GOALS = [
+  { value: "google", label: "Avis Google ⭐" },
+  { value: "instagram", label: "Instagram 📸" },
+  { value: "tiktok", label: "TikTok 🎵" },
+  { value: "autre", label: "Autre 🔗" },
+] as const;
+
+function startOfDay() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+function startOfWeek() {
+  const d = startOfDay();
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  return d;
+}
+
+function Card({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="ink-border-thick mb-6 rounded-3xl bg-white p-6 shadow-pop-pink">
+      <h2 className="mb-4 font-display text-xl font-extrabold">{title}</h2>
+      {children}
+    </section>
+  );
+}
+
 function AdminPage() {
-  const [unlocked, setUnlocked] = useState(false);
-  const [pwd, setPwd] = useState("");
-  const [error, setError] = useState("");
-  const [appUrl, setAppUrl] = useState("");
-  const [spins, setSpins] = useState<Spin[]>([]);
-  const [rewards, setRewards] = useState<Reward[]>([]);
-  const [clients, setClients] = useState<Client[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
-  const [confirmReset, setConfirmReset] = useState(false);
-  const [resetting, setResetting] = useState(false);
-  const [resetMsg, setResetMsg] = useState("");
-  const qrWrapRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const [booting, setBooting] = useState(true);
+  const [signedIn, setSignedIn] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [data, setData] = useState<AdminData | null>(null);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    setAppUrl(window.location.origin + "/");
-    const saved = sessionStorage.getItem("rollsy_admin_pwd");
-    if (saved) {
-      verifyAdminPassword({ data: { password: saved } }).then(({ ok }) => {
-        if (ok) {
-          setPwd(saved);
-          setUnlocked(true);
-        } else sessionStorage.removeItem("rollsy_admin_pwd");
-      });
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!unlocked) return;
-    setLoading(true);
-    (async () => {
-      try {
-        const data = await getAdminData({ data: { password: pwd } });
-        setSpins(data.spins as Spin[]);
-        setRewards(data.rewards as Reward[]);
-        setClients(data.clients as Client[]);
-      } catch {
-        setError("Session expirée, reconnectez-vous.");
-        setUnlocked(false);
-      }
-      setLoading(false);
-    })();
-  }, [unlocked, pwd, refreshKey]);
-
-  const handleReset = async () => {
-    setResetting(true);
-    setResetMsg("");
+  const load = useCallback(async () => {
     try {
-      await resetRollsyData({ data: { password: pwd } });
-      setConfirmReset(false);
-      setResetMsg("Données réinitialisées avec succès ✅");
-      setRefreshKey((k) => k + 1);
+      await completeSignup({ data: {} });
+      const d = await getMerchantAdminData();
+      setData(d);
+      if (!d.merchant.onboarding_completed) navigate({ to: "/onboarding" });
     } catch {
-      setResetMsg("Échec de la réinitialisation ❌");
+      setData(null);
     }
-    setResetting(false);
-  };
+  }, [navigate]);
+
+  useEffect(() => {
+    const run = async () => {
+      const { data: s } = await supabase.auth.getSession();
+      if (s.session) {
+        setSignedIn(true);
+        await load();
+      }
+      setBooting(false);
+    };
+    void run();
+  }, [load]);
+
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
+    setAuthError(null);
+    setBusy(true);
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password,
+    });
+    setBusy(false);
+    if (error) {
+      setAuthError("Email ou mot de passe incorrect.");
+      return;
+    }
+    setSignedIn(true);
+    await load();
+  }
 
   const stats = useMemo(() => {
-    const todayStart = startOfToday().getTime();
+    if (!data) return null;
+    const dayStart = startOfDay().getTime();
     const weekStart = startOfWeek().getTime();
+    const spins = data.spins;
     const wins = spins.filter((s) => s.result === "win");
-    const todaySpins = spins.filter((s) => new Date(s.created_at).getTime() >= todayStart);
-    const rewardName = (id: string | null) =>
-      rewards.find((r) => r.id === id)?.name ?? "Sans lot";
-
-    const byReward = new Map<string, number>();
-    for (const w of wins) {
-      const key = rewardName(w.reward_id);
-      byReward.set(key, (byReward.get(key) || 0) + 1);
-    }
-
-    const quotas = rewards.map((r) => {
-      const periodStart = r.frequency === "week" ? weekStart : todayStart;
-      const won = wins.filter(
-        (w) => w.reward_id === r.id && new Date(w.created_at).getTime() >= periodStart,
+    const byReward = data.rewards.map((r) => {
+      const periodStart = r.frequency === "day" ? dayStart : weekStart;
+      const period = wins.filter(
+        (s) => s.reward_id === r.id && new Date(s.created_at).getTime() >= periodStart,
       ).length;
       return {
         id: r.id,
         name: r.name,
-        frequency: r.frequency,
         quota: r.quota,
-        won,
-        done: won >= r.quota,
+        period,
+        total: wins.filter((s) => s.reward_id === r.id).length,
+        frequency: r.frequency,
       };
     });
-
     return {
       totalSpins: spins.length,
       totalWins: wins.length,
-      todaySpins: todaySpins.length,
-      todayWins: todaySpins.filter((s) => s.result === "win").length,
-      byReward: [...byReward.entries()].sort((a, b) => b[1] - a[1]),
-      quotas,
+      todaySpins: spins.filter((s) => new Date(s.created_at).getTime() >= dayStart).length,
+      todayWins: wins.filter((s) => new Date(s.created_at).getTime() >= dayStart).length,
+      byReward,
     };
-  }, [spins, rewards]);
+  }, [data]);
 
+  const playerUrl =
+    data && typeof window !== "undefined" ? `${window.location.origin}/m/${data.merchant.slug}` : "";
 
-  const exportClientsCsv = () => {
-    const rewardName = (id: string | null) =>
-      rewards.find((r) => r.id === id)?.name ?? "Sans lot";
-    const header = [
-      "Nom",
-      "Téléphone",
-      "Email",
-      "Date d'inscription",
-      "CGU acceptées",
-      "Consentement SMS marketing",
-      "Date/heure du consentement",
-      "IP du consentement",
-      "Participations",
-      "Gains",
-      "Lots gagnés",
-    ];
-    const rows = clients.map((c) => {
-      const mine = spins.filter((s) => s.client_id === c.id);
-      const wins = mine.filter((s) => s.result === "win");
-      return [
-        c.name,
-        c.phone,
-        c.email,
-        new Date(c.created_at).toLocaleString("fr-FR"),
-        c.terms_accepted ? "Oui" : "Non",
-        c.marketing_consent ? "Oui" : "Non",
-        c.consent_at ? new Date(c.consent_at).toLocaleString("fr-FR") : "",
-        c.consent_ip ?? "",
-        mine.length,
-        wins.length,
-        wins.map((w) => rewardName(w.reward_id)).join(" | "),
-      ];
-    });
-    const csv = [header, ...rows].map((r) => r.map(csvCell).join(";")).join("\r\n");
-    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `rollsy-clients-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(a.href);
-  };
-
-
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const { ok } = await verifyAdminPassword({ data: { password: pwd } });
-    if (ok) {
-      sessionStorage.setItem("rollsy_admin_pwd", pwd);
-      setUnlocked(true);
-      setError("");
-    } else setError("Mot de passe incorrect 🚫");
-  };
-
-  const downloadQR = () => {
-    const canvas = qrWrapRef.current?.querySelector("canvas");
+  function downloadQr() {
+    const canvas = document.querySelector<HTMLCanvasElement>("#rollsy-qr canvas");
     if (!canvas) return;
     const a = document.createElement("a");
     a.href = canvas.toDataURL("image/png");
-    a.download = "rollsy-qr-code.png";
+    a.download = `rollsy-${data?.merchant.slug ?? "qr"}.png`;
     a.click();
-  };
+  }
 
-  if (!unlocked) {
+  function exportCsv() {
+    if (!data) return;
+    const header = ["Nom", "Téléphone", "Email", "Inscription", "CGU", "SMS", "Consentement"];
+    const rows = data.clients.map((c) => [
+      c.name ?? "",
+      c.phone ?? "",
+      c.email ?? "",
+      new Date(c.created_at).toLocaleString("fr-FR"),
+      c.terms_accepted ? "oui" : "non",
+      c.marketing_consent ? "oui" : "non",
+      c.consent_at ? new Date(c.consent_at).toLocaleString("fr-FR") : "",
+    ]);
+    const csv = [header, ...rows]
+      .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(";"))
+      .join("\n");
+    const url = URL.createObjectURL(new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "clients-rollsy.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // --- Configuration modifiable ---
+  const [goalType, setGoalType] = useState("google");
+  const [goalUrl, setGoalUrl] = useState("");
+  const [frequency, setFrequency] = useState<"day" | "week">("week");
+  const [rewardRows, setRewardRows] = useState<{ name: string; quota: number }[]>([]);
+  const [savedMsg, setSavedMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!data) return;
+    setGoalType(data.merchant.goal_type ?? "google");
+    setGoalUrl(data.merchant.goal_url ?? "");
+    setFrequency((data.rewards[0]?.frequency as "day" | "week") ?? "week");
+    setRewardRows(data.rewards.map((r) => ({ name: r.name, quota: r.quota })));
+  }, [data]);
+
+  async function saveConfig() {
+    setBusy(true);
+    setSavedMsg(null);
+    try {
+      await saveWheelSetup({
+        data: {
+          goalType,
+          goalUrl: goalUrl.trim(),
+          frequency,
+          rewards: rewardRows.map((r) => ({ name: r.name.trim(), quota: Number(r.quota) || 1 })),
+          completeOnboarding: true,
+        },
+      });
+      await load();
+      setSavedMsg("Configuration enregistrée ✅");
+    } catch {
+      setSavedMsg("Échec de l'enregistrement.");
+    }
+    setBusy(false);
+  }
+
+  async function handleReset() {
+    if (!confirm("Supprimer tous les tours et clients de votre compte ? Action irréversible.")) return;
+    setBusy(true);
+    try {
+      await resetRollsyData();
+      await load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (booting) return null;
+
+  if (!signedIn) {
     return (
-      <main className="flex min-h-screen items-center justify-center px-4">
-        <motion.form
-          initial={{ opacity: 0, y: 20, rotate: -2 }}
-          animate={{ opacity: 1, y: 0, rotate: 0 }}
-          onSubmit={submit}
-          className="ink-border-thick w-full max-w-sm rounded-3xl bg-white p-8 shadow-pop-pink"
-        >
-          <div className="mb-4 text-5xl">🔐</div>
-          <h1 className="mb-2 font-display text-3xl font-extrabold">
-            Espace admin
-          </h1>
-          <p className="mb-6 text-sm font-semibold text-ink/70">
-            Saisissez le mot de passe.
-          </p>
+      <main className="mx-auto max-w-sm px-4 py-20">
+        <h1 className="mb-6 font-display text-3xl font-extrabold">Espace commerçant 🔐</h1>
+        <form onSubmit={handleLogin} className="ink-border-thick rounded-3xl bg-white p-6 shadow-pop-pink">
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Email"
+            className="ink-border mb-3 min-h-[52px] w-full rounded-full bg-yellow/30 px-5 font-bold outline-none"
+          />
           <input
             type="password"
-            value={pwd}
-            onChange={(e) => setPwd(e.target.value)}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             placeholder="Mot de passe"
-            className="ink-border mb-3 min-h-[56px] w-full rounded-full bg-yellow/30 px-5 font-bold outline-none placeholder:text-ink/40 focus:bg-yellow/60"
+            className="ink-border mb-4 min-h-[52px] w-full rounded-full bg-yellow/30 px-5 font-bold outline-none"
           />
-          {error && (
-            <p className="mb-3 text-sm font-bold text-orange-600">{error}</p>
-          )}
-          <motion.button
-            whileHover={{ scale: 1.04, y: -2 }}
-            whileTap={{ scale: 0.96, y: 2 }}
+          {authError && <p className="mb-3 text-sm font-extrabold text-red-600">{authError}</p>}
+          <button
             type="submit"
-            className="ink-border-thick min-h-[56px] w-full rounded-full bg-pink px-6 font-extrabold uppercase text-white shadow-pop-ink"
+            disabled={busy}
+            className="ink-border-thick min-h-[52px] w-full rounded-full bg-pink px-6 font-extrabold uppercase text-white shadow-pop-ink disabled:opacity-50"
           >
-            Entrer 🚀
-          </motion.button>
-        </motion.form>
+            Se connecter
+          </button>
+        </form>
+        <p className="mt-6 text-center text-sm font-bold text-ink/60">
+          Pas encore de compte ?{" "}
+          <Link to="/inscription" className="underline">
+            Essai gratuit 14 jours
+          </Link>
+        </p>
+      </main>
+    );
+  }
+
+  if (!data) {
+    return (
+      <main className="mx-auto max-w-md px-4 py-20 text-center font-bold">
+        Chargement de votre espace...
       </main>
     );
   }
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-10">
-      <h1
-        className="font-display text-4xl font-extrabold sm:text-5xl"
-        style={{
-          color: "#FF3DA6",
-          WebkitTextStroke: "2px #1a1a1a",
-          paintOrder: "stroke fill",
-          filter: "drop-shadow(4px 4px 0 #1a1a1a)",
-        }}
-      >
-        ADMIN ROLLSY 🎪
-      </h1>
-      <p className="mt-4 text-base font-semibold text-ink/80">
-        Imprimez ce QR code et placez-le sur vos tables ou à l'accueil. Vos
-        clients scannent, laissent un avis et tournent la roue ! 🎉
-      </p>
-
-      <div className="mt-8 grid gap-6 sm:grid-cols-2">
-        <motion.div
-          initial={{ opacity: 0, y: 20, rotate: -2 }}
-          animate={{ opacity: 1, y: 0, rotate: -1 }}
-          className="ink-border-thick rounded-3xl bg-white p-6 shadow-pop-pink"
-        >
-          <h2 className="mb-4 font-display text-xl font-extrabold">
-            📱 Votre QR code
-          </h2>
-          <div
-            ref={qrWrapRef}
-            className="ink-border flex items-center justify-center rounded-2xl bg-white p-5"
-          >
-            {appUrl && (
-              <QRCodeCanvas value={appUrl} size={220} level="H" includeMargin={false} />
-            )}
-          </div>
-          <motion.button
-            whileHover={{ scale: 1.04, y: -2 }}
-            whileTap={{ scale: 0.96, y: 2 }}
-            onClick={downloadQR}
-            className="ink-border-thick mt-4 min-h-[52px] w-full rounded-full bg-yellow px-5 font-extrabold uppercase shadow-pop-ink"
-          >
-            ⬇️ Télécharger
-          </motion.button>
-          <p className="mt-3 break-all text-xs font-semibold text-ink/50">{appUrl}</p>
-        </motion.div>
-
-        <div className="space-y-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20, rotate: 2 }}
-            animate={{ opacity: 1, y: 0, rotate: 1 }}
-            className="ink-border-thick rounded-3xl bg-green p-6 shadow-pop-ink"
-          >
-            <h3 className="mb-2 text-xs font-extrabold uppercase tracking-widest text-ink">
-              ⭐ URL avis Google
-            </h3>
-            <p className="break-all text-sm font-bold text-ink">{GOOGLE_REVIEW_URL}</p>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="ink-border-thick rounded-3xl bg-white p-6 shadow-pop-orange"
-          >
-            <h3 className="mb-4 text-xs font-extrabold uppercase tracking-widest text-ink/60">
-              📊 Stats du jour
-            </h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="ink-border rounded-2xl bg-yellow p-4 text-center">
-                <div className="font-display text-4xl font-extrabold">{stats.todaySpins}</div>
-                <div className="text-xs font-extrabold uppercase">🎰 Tours</div>
-              </div>
-              <div className="ink-border rounded-2xl bg-pink p-4 text-center text-white">
-                <div className="font-display text-4xl font-extrabold">{stats.todayWins}</div>
-
-                <div className="text-xs font-extrabold uppercase">🎁 Gains</div>
-              </div>
-            </div>
-          </motion.div>
-
-          <button
-            onClick={() => {
-              sessionStorage.removeItem("rollsy_admin_pwd");
-              setPwd("");
-              setUnlocked(false);
-            }}
-            className="text-xs font-extrabold uppercase tracking-widest text-ink/50 hover:text-ink"
-          >
-            🚪 Se déconnecter
-          </button>
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="font-display text-3xl font-extrabold">{data.merchant.company_name}</h1>
+          <p className="font-bold text-ink/60">Espace commerçant Rollsy</p>
         </div>
+        <button
+          onClick={async () => {
+            await supabase.auth.signOut();
+            setSignedIn(false);
+            setData(null);
+          }}
+          className="ink-border min-h-[44px] rounded-full bg-white px-5 font-extrabold uppercase"
+        >
+          Déconnexion
+        </button>
       </div>
 
-      <section className="mt-10 space-y-6">
-        <h2 className="font-display text-2xl font-extrabold">
-          📈 Statistiques globales {loading && <span className="text-base">⏳</span>}
-        </h2>
-
-        <div className="grid gap-6 sm:grid-cols-2">
-          <div className="ink-border-thick rounded-3xl bg-yellow p-6 text-center shadow-pop-ink">
-            <div className="font-display text-5xl font-extrabold">{stats.totalSpins}</div>
-            <div className="mt-1 text-xs font-extrabold uppercase tracking-widest">
-              🎰 Tours joués (total)
-            </div>
-          </div>
-          <div className="ink-border-thick rounded-3xl bg-pink p-6 text-center text-white shadow-pop-ink">
-            <div className="font-display text-5xl font-extrabold">{stats.totalWins}</div>
-            <div className="mt-1 text-xs font-extrabold uppercase tracking-widest">
-              🎁 Gains (total)
-            </div>
-          </div>
-        </div>
-
-        <div className="ink-border-thick rounded-3xl bg-white p-6 shadow-pop-pink">
-          <h3 className="mb-4 text-xs font-extrabold uppercase tracking-widest text-ink/60">
-            🏆 Répartition des gains par lot
-          </h3>
-          {stats.byReward.length === 0 ? (
-            <p className="text-sm font-bold text-ink/50">Aucun gain enregistré pour l'instant.</p>
-          ) : (
-            <ul className="space-y-3">
-              {stats.byReward.map(([name, count]) => (
-                <li
-                  key={name}
-                  className="ink-border flex items-center justify-between rounded-2xl bg-green/30 px-4 py-3"
-                >
-                  <span className="font-extrabold">{name}</span>
-                  <span className="font-display text-xl font-extrabold">{count}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <div className="ink-border-thick rounded-3xl bg-white p-6 shadow-pop-orange">
-          <h3 className="mb-4 text-xs font-extrabold uppercase tracking-widest text-ink/60">
-            📊 Quotas en direct — cette semaine
-          </h3>
-          <ul className="space-y-3">
-            {stats.quotas.map((q) => (
-              <li
-                key={q.id}
-                className={`ink-border rounded-2xl px-4 py-3 ${q.done ? "bg-orange/30" : "bg-yellow/30"}`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-extrabold">{q.name}</span>
-                  <span className="font-display text-xl font-extrabold">
-                    {q.won}/{q.quota}
-                  </span>
-                </div>
-                <p className="mt-1 text-xs font-bold text-ink/60">
-                  {q.done
-                    ? "Quota atteint ✅ — les clients tombent sur « Perdu »"
-                    : `Encore ${q.quota - q.won} disponible(s) cette ${q.frequency === "week" ? "semaine" : "journée"}`}
-                </p>
-              </li>
+      {stats && (
+        <Card title="Statistiques">
+          <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {[
+              ["Tours aujourd'hui", stats.todaySpins],
+              ["Gains aujourd'hui", stats.todayWins],
+              ["Tours au total", stats.totalSpins],
+              ["Gains au total", stats.totalWins],
+            ].map(([label, value]) => (
+              <div key={String(label)} className="ink-border rounded-2xl bg-yellow/30 p-4 text-center">
+                <p className="font-display text-2xl font-extrabold">{value as number}</p>
+                <p className="text-xs font-bold text-ink/70">{label as string}</p>
+              </div>
             ))}
-          </ul>
-        </div>
-
-
-        <div className="ink-border-thick rounded-3xl bg-white p-6 shadow-pop-ink">
-          <h3 className="mb-3 text-xs font-extrabold uppercase tracking-widest text-ink/60">
-            👥 Clients ({clients.length})
-          </h3>
-          <motion.button
-            whileHover={{ scale: 1.03, y: -2 }}
-            whileTap={{ scale: 0.97, y: 2 }}
-            onClick={exportClientsCsv}
-            className="ink-border-thick min-h-[52px] w-full rounded-full bg-green px-5 font-extrabold uppercase shadow-pop-ink"
-          >
-            ⬇️ Exporter les clients en CSV
-          </motion.button>
-        </div>
-
-        <div className="ink-border-thick rounded-3xl bg-orange/15 p-6 shadow-pop-orange">
-          <h3 className="mb-2 font-display text-xl font-extrabold text-orange-600">
-            ⚠️ Zone dangereuse
-          </h3>
-          <p className="mb-4 text-sm font-bold text-ink/70">
-            Supprime tous les tours joués, tous les clients, la répartition des gains et
-            remet les quotas consommés (jour/semaine) à zéro. La configuration des lots et
-            les réglages admin ne sont pas modifiés.
-          </p>
-          <motion.button
-            whileHover={{ scale: 1.03, y: -2 }}
-            whileTap={{ scale: 0.97, y: 2 }}
-            onClick={() => {
-              setResetMsg("");
-              setConfirmReset(true);
-            }}
-            className="ink-border-thick min-h-[52px] w-full rounded-full bg-orange px-5 font-extrabold uppercase text-white shadow-pop-ink"
-          >
-            🗑️ Réinitialiser les données
-          </motion.button>
-          {resetMsg && (
-            <p className="mt-3 text-sm font-extrabold text-ink">{resetMsg}</p>
-          )}
-        </div>
-      </section>
-
-      {confirmReset && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/60 px-4">
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="ink-border-thick w-full max-w-md rounded-3xl bg-white p-6 shadow-pop-pink"
-          >
-            <h4 className="mb-3 font-display text-2xl font-extrabold">Êtes-vous sûr ? 😬</h4>
-            <p className="mb-6 text-sm font-bold text-ink/80">
-              Cette action supprimera définitivement tous les tours joués, tous les clients
-              et toutes les statistiques. Cette action est irréversible. Confirmer ?
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setConfirmReset(false)}
-                disabled={resetting}
-                className="ink-border min-h-[52px] flex-1 rounded-full bg-white px-5 font-extrabold uppercase"
+          </div>
+          <div className="space-y-2">
+            {stats.byReward.map((r) => (
+              <div
+                key={r.id}
+                className="ink-border flex items-center justify-between rounded-2xl bg-white px-4 py-3"
               >
-                Annuler
-              </button>
-              <button
-                onClick={handleReset}
-                disabled={resetting}
-                className="ink-border-thick min-h-[52px] flex-1 rounded-full bg-orange px-5 font-extrabold uppercase text-white shadow-pop-ink"
-              >
-                {resetting ? "…" : "Confirmer"}
-              </button>
-            </div>
-          </motion.div>
-        </div>
+                <span className="font-extrabold">{r.name}</span>
+                <span className="font-bold">
+                  {r.period}/{r.quota} {r.frequency === "day" ? "aujourd'hui" : "cette semaine"}
+                  {r.period >= r.quota && " · quota atteint"}
+                </span>
+              </div>
+            ))}
+          </div>
+        </Card>
       )}
-    </main>
 
+      <Card title="Votre QR code">
+        <div id="rollsy-qr" className="mb-4 inline-block rounded-2xl bg-white p-4">
+          {playerUrl && <QRCodeCanvas value={playerUrl} size={200} includeMargin />}
+        </div>
+        <p className="mb-4 break-all text-sm font-bold text-ink/70">{playerUrl}</p>
+        <button
+          onClick={downloadQr}
+          className="ink-border-thick min-h-[52px] rounded-full bg-yellow px-6 font-extrabold uppercase shadow-pop-ink"
+        >
+          Télécharger le QR code ⬇️
+        </button>
+      </Card>
+
+      <Card title="Configuration de la roue">
+        <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {GOALS.map((g) => (
+            <button
+              key={g.value}
+              onClick={() => setGoalType(g.value)}
+              className={`ink-border min-h-[48px] rounded-2xl px-3 font-extrabold ${
+                goalType === g.value ? "bg-pink text-white" : "bg-yellow/30"
+              }`}
+            >
+              {g.label}
+            </button>
+          ))}
+        </div>
+        <label className="mb-4 block">
+          <span className="mb-1 block text-sm font-extrabold">Lien de redirection</span>
+          <input
+            value={goalUrl}
+            onChange={(e) => setGoalUrl(e.target.value)}
+            className="ink-border min-h-[52px] w-full rounded-full bg-yellow/30 px-5 font-bold outline-none"
+          />
+        </label>
+        <div className="mb-4 grid grid-cols-2 gap-3">
+          {(["day", "week"] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setFrequency(f)}
+              className={`ink-border min-h-[48px] rounded-2xl px-3 font-extrabold ${
+                frequency === f ? "bg-green text-white" : "bg-yellow/30"
+              }`}
+            >
+              {f === "day" ? "Par jour ☀️" : "Par semaine 📅"}
+            </button>
+          ))}
+        </div>
+        {rewardRows.map((r, i) => (
+          <div key={i} className="mb-3 flex gap-2">
+            <input
+              value={r.name}
+              onChange={(e) =>
+                setRewardRows((prev) => prev.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))
+              }
+              className="ink-border min-h-[52px] flex-1 rounded-full bg-yellow/30 px-5 font-bold outline-none"
+            />
+            <input
+              type="number"
+              min={1}
+              value={r.quota}
+              onChange={(e) =>
+                setRewardRows((prev) =>
+                  prev.map((x, j) => (j === i ? { ...x, quota: Number(e.target.value) } : x)),
+                )
+              }
+              className="ink-border min-h-[52px] w-20 rounded-full bg-white px-4 text-center font-bold outline-none"
+            />
+            <button
+              onClick={() => setRewardRows((prev) => prev.filter((_, j) => j !== i))}
+              className="ink-border min-h-[52px] rounded-full bg-white px-4 font-extrabold"
+              aria-label="Supprimer la récompense"
+            >
+              ✕
+            </button>
+          </div>
+        ))}
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={() => setRewardRows((prev) => [...prev, { name: "", quota: 1 }])}
+            disabled={rewardRows.length >= 8}
+            className="ink-border min-h-[52px] rounded-full bg-white px-5 font-extrabold uppercase disabled:opacity-40"
+          >
+            + Ajouter un lot
+          </button>
+          <button
+            onClick={saveConfig}
+            disabled={busy || rewardRows.length < 2}
+            className="ink-border-thick min-h-[52px] rounded-full bg-pink px-6 font-extrabold uppercase text-white shadow-pop-ink disabled:opacity-50"
+          >
+            Enregistrer
+          </button>
+        </div>
+        {savedMsg && <p className="mt-3 text-sm font-extrabold">{savedMsg}</p>}
+      </Card>
+
+      <Card title={`Clients (${data.clients.length})`}>
+        <button
+          onClick={exportCsv}
+          className="ink-border-thick min-h-[52px] rounded-full bg-green px-6 font-extrabold uppercase text-white shadow-pop-ink"
+        >
+          Exporter les clients en CSV 📥
+        </button>
+      </Card>
+
+      <section className="mb-10 rounded-3xl border-4 border-red-500 bg-white p-6">
+        <h2 className="mb-2 font-display text-xl font-extrabold text-red-600">Zone dangereuse</h2>
+        <p className="mb-4 text-sm font-bold text-ink/70">
+          Supprime définitivement vos tours et vos clients. Les lots et réglages sont conservés.
+        </p>
+        <button
+          onClick={handleReset}
+          disabled={busy}
+          className="min-h-[52px] rounded-full border-4 border-red-600 bg-red-500 px-6 font-extrabold uppercase text-white disabled:opacity-50"
+        >
+          Réinitialiser les données 🗑️
+        </button>
+      </section>
+    </main>
   );
 }
