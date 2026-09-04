@@ -9,6 +9,19 @@ const steps = [
   { icon: "🎰", title: "Tournez la roue", desc: "Et gagnez une récompense immédiate !", color: "bg-green" },
 ];
 
+function requiredActionMessage(goalType: string) {
+  switch (goalType) {
+    case "google":
+      return "Vous devez d'abord laisser un avis pour débloquer la roue ! ⭐";
+    case "instagram":
+      return "Vous devez d'abord vous abonner à l'Instagram pour débloquer la roue ! 📸";
+    case "tiktok":
+      return "Vous devez d'abord vous abonner au TikTok pour débloquer la roue ! 🎵";
+    default:
+      return "Vous devez d'abord faire l'action demandée pour débloquer la roue ! ⭐";
+  }
+}
+
 const shadowMap = ["shadow-pop-pink", "shadow-pop-yellow", "shadow-pop-green"] as const;
 
 export default function PlayerLanding({ merchant }: { merchant: PublicMerchant }) {
@@ -31,7 +44,7 @@ export default function PlayerLanding({ merchant }: { merchant: PublicMerchant }
     if (localStorage.getItem(reviewedKey) === "true") {
       void goToWheel();
     } else {
-      setWarning("Faites l'action d'abord pour débloquer la roue ! ⭐");
+      setWarning(requiredActionMessage(merchant.goalType));
     }
   };
 
