@@ -8,7 +8,14 @@ export const DEFAULT_MERCHANT_SLUG = "afro-fouta";
 export const contactSchema = z.object({
   slug: z.string().trim().min(1).max(80),
   name: z.string().trim().min(1).max(80),
-  phone: z.string().trim().min(4).max(30),
+  phone: z
+    .string()
+    .trim()
+    .max(30)
+    .refine((v) => {
+      const d = v.replace(/\D/g, "");
+      return d.length >= 9 && d.length <= 15;
+    }, "Numéro de téléphone invalide"),
   termsAccepted: z.literal(true),
   marketingConsent: z.boolean(),
 });
