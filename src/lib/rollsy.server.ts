@@ -578,3 +578,56 @@ export async function updateMerchantAccess(
   }
   return { ok: true as const };
 }
+
+// ---------- Notifications administrateur ----------
+
+export type AdminNotification = {
+  id: string;
+  type: string;
+  title: string;
+  body: string;
+  createdAt: string;
+  readAt: string | null;
+};
+
+export async function recordAdminEvent(
+  type: string,
+  title: string,
+  body: string,
+  merchantId: string | null,
+) {
+  try {
+    const db = await admin();
+    await db.from("admin_notifications").insert({ type, title, body, merchant_id: merchantId });
+  } catch (e) {
+    console.error("[rollsy] admin notification failed", e);
+  }
+}
+
+export async function listAdminNotifications(userId: string): Promise<AdminNotification[]> {
+  await assertSuperAdmin(userId);
+  const db = await admin();
+  const { data } = await db
+    .from("admin_notifications")
+    .select("id, type, title, body, created_at, read_at")
+    .order("created_at", { ascending: false })
+    .limit(50);
+  return (data ?? []).map((n) => ({
+    id: n.id as string,
+    type: n.type as string,
+    title: n.title as string,
+    body: n.body as string,
+    createdAt: n.created_at as string,
+    readAt: (n.read_at as string | null) ?? null,
+  }));
+}
+
+export async function markAdminNotificationsRead(userId: string) {
+  await assertSuperAdmin(userId);
+  const db = await admin();
+  await db
+    .from("admin_notifications")
+    .update({ read_at: new Date().toISOString() })
+    .is("read_at", null);
+  return { ok: true as const };
+}
