@@ -22,6 +22,7 @@ export type Database = {
           email: string | null
           id: string
           marketing_consent: boolean
+          merchant_id: string | null
           name: string | null
           phone: string | null
           terms_accepted: boolean
@@ -33,6 +34,7 @@ export type Database = {
           email?: string | null
           id?: string
           marketing_consent?: boolean
+          merchant_id?: string | null
           name?: string | null
           phone?: string | null
           terms_accepted?: boolean
@@ -44,9 +46,72 @@ export type Database = {
           email?: string | null
           id?: string
           marketing_consent?: boolean
+          merchant_id?: string | null
           name?: string | null
           phone?: string | null
           terms_accepted?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clients_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      merchants: {
+        Row: {
+          cgv_accepted_at: string | null
+          company_name: string
+          created_at: string
+          email: string
+          first_name: string | null
+          goal_type: string
+          goal_url: string | null
+          id: string
+          last_name: string | null
+          onboarding_completed: boolean
+          owner_id: string | null
+          phone: string | null
+          slug: string
+          status: string
+          trial_ends_at: string | null
+        }
+        Insert: {
+          cgv_accepted_at?: string | null
+          company_name: string
+          created_at?: string
+          email: string
+          first_name?: string | null
+          goal_type?: string
+          goal_url?: string | null
+          id?: string
+          last_name?: string | null
+          onboarding_completed?: boolean
+          owner_id?: string | null
+          phone?: string | null
+          slug: string
+          status?: string
+          trial_ends_at?: string | null
+        }
+        Update: {
+          cgv_accepted_at?: string | null
+          company_name?: string
+          created_at?: string
+          email?: string
+          first_name?: string | null
+          goal_type?: string
+          goal_url?: string | null
+          id?: string
+          last_name?: string | null
+          onboarding_completed?: boolean
+          owner_id?: string | null
+          phone?: string | null
+          slug?: string
+          status?: string
+          trial_ends_at?: string | null
         }
         Relationships: []
       }
@@ -56,6 +121,7 @@ export type Database = {
           created_at: string
           frequency: string
           id: string
+          merchant_id: string | null
           name: string
           quota: number
           quota_afternoon: number | null
@@ -67,6 +133,7 @@ export type Database = {
           created_at?: string
           frequency: string
           id?: string
+          merchant_id?: string | null
           name: string
           quota?: number
           quota_afternoon?: number | null
@@ -78,13 +145,22 @@ export type Database = {
           created_at?: string
           frequency?: string
           id?: string
+          merchant_id?: string | null
           name?: string
           quota?: number
           quota_afternoon?: number | null
           quota_morning?: number | null
           short_label?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "rewards_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       settings: {
         Row: {
@@ -108,6 +184,7 @@ export type Database = {
           code_used: boolean
           created_at: string
           id: string
+          merchant_id: string | null
           result: string
           reward_id: string | null
         }
@@ -117,6 +194,7 @@ export type Database = {
           code_used?: boolean
           created_at?: string
           id?: string
+          merchant_id?: string | null
           result: string
           reward_id?: string | null
         }
@@ -126,6 +204,7 @@ export type Database = {
           code_used?: boolean
           created_at?: string
           id?: string
+          merchant_id?: string | null
           result?: string
           reward_id?: string | null
         }
@@ -135,6 +214,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spins_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
             referencedColumns: ["id"]
           },
           {

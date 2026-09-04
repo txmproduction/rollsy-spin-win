@@ -11,8 +11,14 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as CgvRouteImport } from './routes/cgv'
 import { Route as ConfidentialiteRouteImport } from './routes/confidentialite'
+import { Route as ConfirmationRouteImport } from './routes/confirmation'
+import { Route as InscriptionRouteImport } from './routes/inscription'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as RoueRouteImport } from './routes/roue'
+import { Route as MSlugRouteImport } from './routes/m.$slug'
+import { Route as MSlugRoueRouteImport } from './routes/m.$slug.roue'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -24,9 +30,29 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CgvRoute = CgvRouteImport.update({
+  id: '/cgv',
+  path: '/cgv',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ConfidentialiteRoute = ConfidentialiteRouteImport.update({
   id: '/confidentialite',
   path: '/confidentialite',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConfirmationRoute = ConfirmationRouteImport.update({
+  id: '/confirmation',
+  path: '/confirmation',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InscriptionRoute = InscriptionRouteImport.update({
+  id: '/inscription',
+  path: '/inscription',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RoueRoute = RoueRouteImport.update({
@@ -34,39 +60,103 @@ const RoueRoute = RoueRouteImport.update({
   path: '/roue',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MSlugRoute = MSlugRouteImport.update({
+  id: '/m/$slug',
+  path: '/m/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MSlugRoueRoute = MSlugRoueRouteImport.update({
+  id: '/roue',
+  path: '/roue',
+  getParentRoute: () => MSlugRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/cgv': typeof CgvRoute
   '/confidentialite': typeof ConfidentialiteRoute
+  '/confirmation': typeof ConfirmationRoute
+  '/inscription': typeof InscriptionRoute
+  '/onboarding': typeof OnboardingRoute
   '/roue': typeof RoueRoute
+  '/m/$slug': typeof MSlugRouteWithChildren
+  '/m/$slug/roue': typeof MSlugRoueRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/cgv': typeof CgvRoute
   '/confidentialite': typeof ConfidentialiteRoute
+  '/confirmation': typeof ConfirmationRoute
+  '/inscription': typeof InscriptionRoute
+  '/onboarding': typeof OnboardingRoute
   '/roue': typeof RoueRoute
+  '/m/$slug': typeof MSlugRouteWithChildren
+  '/m/$slug/roue': typeof MSlugRoueRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/cgv': typeof CgvRoute
   '/confidentialite': typeof ConfidentialiteRoute
+  '/confirmation': typeof ConfirmationRoute
+  '/inscription': typeof InscriptionRoute
+  '/onboarding': typeof OnboardingRoute
   '/roue': typeof RoueRoute
+  '/m/$slug': typeof MSlugRouteWithChildren
+  '/m/$slug/roue': typeof MSlugRoueRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/confidentialite' | '/roue'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/cgv'
+    | '/confidentialite'
+    | '/confirmation'
+    | '/inscription'
+    | '/onboarding'
+    | '/roue'
+    | '/m/$slug'
+    | '/m/$slug/roue'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/confidentialite' | '/roue'
-  id: '__root__' | '/' | '/admin' | '/confidentialite' | '/roue'
+  to:
+    | '/'
+    | '/admin'
+    | '/cgv'
+    | '/confidentialite'
+    | '/confirmation'
+    | '/inscription'
+    | '/onboarding'
+    | '/roue'
+    | '/m/$slug'
+    | '/m/$slug/roue'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/cgv'
+    | '/confidentialite'
+    | '/confirmation'
+    | '/inscription'
+    | '/onboarding'
+    | '/roue'
+    | '/m/$slug'
+    | '/m/$slug/roue'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
+  CgvRoute: typeof CgvRoute
   ConfidentialiteRoute: typeof ConfidentialiteRoute
+  ConfirmationRoute: typeof ConfirmationRoute
+  InscriptionRoute: typeof InscriptionRoute
+  OnboardingRoute: typeof OnboardingRoute
   RoueRoute: typeof RoueRoute
+  MSlugRoute: typeof MSlugRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -85,11 +175,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/cgv': {
+      id: '/cgv'
+      path: '/cgv'
+      fullPath: '/cgv'
+      preLoaderRoute: typeof CgvRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/confidentialite': {
       id: '/confidentialite'
       path: '/confidentialite'
       fullPath: '/confidentialite'
       preLoaderRoute: typeof ConfidentialiteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmation': {
+      id: '/confirmation'
+      path: '/confirmation'
+      fullPath: '/confirmation'
+      preLoaderRoute: typeof ConfirmationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/inscription': {
+      id: '/inscription'
+      path: '/inscription'
+      fullPath: '/inscription'
+      preLoaderRoute: typeof InscriptionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/roue': {
@@ -99,14 +217,43 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RoueRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/m/$slug': {
+      id: '/m/$slug'
+      path: '/m/$slug'
+      fullPath: '/m/$slug'
+      preLoaderRoute: typeof MSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/m/$slug/roue': {
+      id: '/m/$slug/roue'
+      path: '/roue'
+      fullPath: '/m/$slug/roue'
+      preLoaderRoute: typeof MSlugRoueRouteImport
+      parentRoute: typeof MSlugRoute
+    }
   }
 }
+
+interface MSlugRouteChildren {
+  MSlugRoueRoute: typeof MSlugRoueRoute
+}
+
+const MSlugRouteChildren: MSlugRouteChildren = {
+  MSlugRoueRoute: MSlugRoueRoute,
+}
+
+const MSlugRouteWithChildren = MSlugRoute._addFileChildren(MSlugRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
+  CgvRoute: CgvRoute,
   ConfidentialiteRoute: ConfidentialiteRoute,
+  ConfirmationRoute: ConfirmationRoute,
+  InscriptionRoute: InscriptionRoute,
+  OnboardingRoute: OnboardingRoute,
   RoueRoute: RoueRoute,
+  MSlugRoute: MSlugRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
