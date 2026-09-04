@@ -9,6 +9,7 @@ import {
   saveWheelSetup,
   completeSignup,
   markSpinCodeUsed,
+  amISuperAdmin,
 } from "@/lib/rollsy.functions";
 
 export const Route = createFileRoute("/admin")({
@@ -102,12 +103,18 @@ function AdminPage() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [data, setData] = useState<AdminData | null>(null);
+  const [isSuper, setIsSuper] = useState(false);
 
   const load = useCallback(async () => {
     try {
       await completeSignup({ data: {} });
       const d = await getMerchantAdminData();
       setData(d);
+      try {
+        setIsSuper(await amISuperAdmin());
+      } catch {
+        setIsSuper(false);
+      }
       if (!d.merchant.onboarding_completed) navigate({ to: "/onboarding" });
     } catch {
       setData(null);
