@@ -61,6 +61,29 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
   );
 }
 
+function ClientRow({ client }: { client: AdminData["clients"][number] }) {
+  const [revealed, setRevealed] = useState(false);
+  const hasPhone = !!client.phone;
+
+  return (
+    <div className="ink-border flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-white px-4 py-3">
+      <span className="font-extrabold">{client.name?.trim() || "—"}</span>
+      <div className="flex items-center gap-2">
+        <span className="font-bold text-ink/70">{revealed ? (client.phone ?? "—") : maskPhone(client.phone)}</span>
+        {hasPhone && (
+          <button
+            onClick={() => setRevealed((v) => !v)}
+            className="ink-border min-h-[36px] rounded-full bg-yellow/40 px-3 text-sm font-extrabold"
+            aria-label={revealed ? "Masquer le numéro" : "Voir le numéro"}
+          >
+            {revealed ? "🙈" : "👁️ Voir"}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function AdminPage() {
   const navigate = useNavigate();
   const [booting, setBooting] = useState(true);
@@ -185,7 +208,6 @@ function AdminPage() {
   const [logoPath, setLogoPath] = useState<string | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [showPhones, setShowPhones] = useState(false);
 
   async function handleLogoFile(file: File | null) {
     if (!file) return;
@@ -566,32 +588,18 @@ function AdminPage() {
           >
             Exporter les clients en CSV 📥
           </button>
-          <button
-            onClick={() => setShowPhones((v) => !v)}
-            className="ink-border min-h-[52px] rounded-full bg-white px-6 font-extrabold uppercase"
-          >
-            {showPhones ? "Masquer les numéros 🙈" : "Afficher les numéros 👁️"}
-          </button>
         </div>
         {data.clients.length === 0 ? (
           <p className="text-sm font-bold text-ink/70">Aucun client pour le moment.</p>
         ) : (
           <div className="max-h-80 space-y-2 overflow-y-auto">
             {data.clients.slice(0, 100).map((c) => (
-              <div
-                key={c.id}
-                className="ink-border flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-white px-4 py-3"
-              >
-                <span className="font-extrabold">{c.name ?? "—"}</span>
-                <span className="font-bold text-ink/70">
-                  {showPhones ? (c.phone ?? "—") : maskPhone(c.phone)}
-                </span>
-              </div>
+              <ClientRow key={c.id} client={c} />
             ))}
           </div>
         )}
         <p className="mt-3 text-xs font-bold text-ink/50">
-          Les numéros sont masqués par défaut. Ils restent complets dans l'export CSV.
+          Les numéros sont masqués par défaut. Cliquez sur l'œil pour afficher celui d'un client. Ils restent complets dans l'export CSV.
         </p>
       </Card>
 
