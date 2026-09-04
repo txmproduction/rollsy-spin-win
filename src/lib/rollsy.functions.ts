@@ -7,6 +7,7 @@ import {
   slugSchema,
   signupSchema,
   setupSchema,
+  codeSchema,
   insertClientContact,
   decideAndRecordSpin,
   getPublicMerchant,
@@ -15,6 +16,7 @@ import {
   saveMerchantSetup,
   loadMerchantAdminData,
   resetMerchantData,
+  setSpinCodeUsed,
 } from "./rollsy.server";
 
 export const fetchMerchant = createServerFn({ method: "GET" })
@@ -56,6 +58,11 @@ export const saveWheelSetup = createServerFn({ method: "POST" })
 export const getMerchantAdminData = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => loadMerchantAdminData(context.userId));
+
+export const markSpinCodeUsed = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => codeSchema.parse(data))
+  .handler(async ({ context, data }) => setSpinCodeUsed(context.userId, data.spinId, data.used));
 
 export const resetRollsyData = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

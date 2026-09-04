@@ -41,7 +41,13 @@ export const setupSchema = z.object({
     )
     .min(2)
     .max(8),
+  rewardMode: z.enum(["immediate", "next_visit"]).optional(),
   completeOnboarding: z.boolean().optional(),
+});
+
+export const codeSchema = z.object({
+  spinId: z.string().uuid(),
+  used: z.boolean(),
 });
 
 const GOAL_LABELS: Record<string, string> = {
@@ -98,6 +104,7 @@ export type PublicMerchant = {
   goalType: string;
   goalUrl: string | null;
   goalLabel: string;
+  rewardMode: "immediate" | "next_visit";
   rewards: { id: string; name: string; short_label: string | null }[];
 };
 
@@ -105,7 +112,7 @@ export async function getPublicMerchant(slug: string): Promise<PublicMerchant | 
   const db = await admin();
   const { data: m } = await db
     .from("merchants")
-    .select("id, slug, company_name, goal_type, goal_url")
+    .select("id, slug, company_name, goal_type, goal_url, reward_mode")
     .eq("slug", slug)
     .maybeSingle();
   if (!m) return null;
@@ -122,6 +129,7 @@ export async function getPublicMerchant(slug: string): Promise<PublicMerchant | 
     goalType: m.goal_type as string,
     goalUrl: (m.goal_url as string) ?? null,
     goalLabel: goalLabel(m.goal_type as string),
+    rewardMode: (m.reward_mode as string) === "next_visit" ? "next_visit" : "immediate",
     rewards: (rewards ?? []) as PublicMerchant["rewards"],
   };
 }
@@ -165,8 +173,15 @@ export async function insertClientContact(input: {
 
 export async function decideAndRecordSpin(slug: string, clientId: string | null) {
   const db = await admin();
-  const merchantId = await merchantIdBySlug(slug);
-  if (!merchantId) throw new Error("Commerce introuvable.");
+  const { data: merchant } = await db
+    .from("merchants")
+    .select("id, reward_mode")
+    .eq("slug", slug)
+    .maybeSingle();
+  if (!merchant) throw new Error("Commerce introuvable.");
+  const merchantId = merchant.id as string;
+  const rewardMode: "immediate" | "next_visit" =
+    (merchant.reward_mode as string) === "next_visit" ? "next_visit" : "immediate";
 
   const { data: rewards } = await db
     .from("rewards")
@@ -209,7 +224,7 @@ export async function decideAndRecordSpin(slug: string, clientId: string | null)
     }
   }
 
-  const code = wonId ? generateCode() : null;
+  const code = wonId && rewardMode === "next_visit" ? generateCode() : null;
   const { error } = await db.from("spins").insert({
     merchant_id: merchantId,
     client_id: clientId,
@@ -219,7 +234,7 @@ export async function decideAndRecordSpin(slug: string, clientId: string | null)
   });
   if (error) console.error("[rollsy] spin insert failed", error);
 
-  return { rewardId: wonId, code };
+  return { rewardId: wonId, code, rewardMode };
 }
 
 // ---------- Espace commerçant (authentifié) ----------
@@ -229,7 +244,7 @@ export async function findMerchantByOwner(userId: string) {
   const { data } = await db
     .from("merchants")
     .select(
-      "id, slug, company_name, first_name, last_name, phone, email, goal_type, goal_url, status, onboarding_completed, trial_ends_at",
+      "id, slug, company_name, first_name, last_name, phone, email, goal_type, goal_url, reward_mode, status, onboarding_completed, trial_ends_at",
     )
     .eq("owner_id", userId)
     .maybeSingle();
@@ -272,7 +287,7 @@ export async function ensureMerchantForUser(
       trial_ends_at: trialEnds.toISOString(),
     })
     .select(
-      "id, slug, company_name, first_name, last_name, phone, email, goal_type, goal_url, status, onboarding_completed, trial_ends_at",
+      "id, slug, company_name, first_name, last_name, phone, email, goal_type, goal_url, reward_mode, status, onboarding_completed, trial_ends_at",
     )
     .single();
   if (error || !data) {
@@ -297,6 +312,7 @@ export async function saveMerchantSetup(userId: string, input: z.infer<typeof se
     .update({
       goal_type: input.goalType,
       goal_url: input.goalUrl,
+      ...(input.rewardMode ? { reward_mode: input.rewardMode } : {}),
       ...(input.completeOnboarding ? { onboarding_completed: true } : {}),
     })
     .eq("id", m.id);
@@ -333,7 +349,7 @@ export async function loadMerchantAdminData(userId: string) {
   const [spins, rewards, clients] = await Promise.all([
     db
       .from("spins")
-      .select("id, client_id, reward_id, result, created_at")
+      .select("id, client_id, reward_id, result, code, code_used, created_at")
       .eq("merchant_id", m.id)
       .order("created_at", { ascending: false }),
     db
@@ -356,6 +372,21 @@ export async function loadMerchantAdminData(userId: string) {
     rewards: rewards.data ?? [],
     clients: clients.data ?? [],
   };
+}
+
+export async function setSpinCodeUsed(userId: string, spinId: string, used: boolean) {
+  const m = await requireMerchant(userId);
+  const db = await admin();
+  const { error } = await db
+    .from("spins")
+    .update({ code_used: used })
+    .eq("id", spinId)
+    .eq("merchant_id", m.id);
+  if (error) {
+    console.error("[rollsy] code update failed", error);
+    throw new Error("Impossible de mettre à jour ce code.");
+  }
+  return { ok: true as const };
 }
 
 export async function resetMerchantData(userId: string) {

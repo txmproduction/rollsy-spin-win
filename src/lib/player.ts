@@ -6,6 +6,7 @@ export type PublicMerchant = {
   goalType: string;
   goalUrl: string | null;
   goalLabel: string;
+  rewardMode: "immediate" | "next_visit";
   rewards: { id: string; name: string; short_label: string | null }[];
   isDefault: boolean;
 };
