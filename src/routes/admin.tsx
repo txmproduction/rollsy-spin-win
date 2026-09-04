@@ -45,6 +45,13 @@ function startOfWeek() {
   return d;
 }
 
+function maskPhone(phone: string | null) {
+  if (!phone) return "—";
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length < 4) return "••";
+  return `${digits.slice(0, 2)} •• •• •• ${digits.slice(-2)}`;
+}
+
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="ink-border-thick mb-6 rounded-3xl bg-white p-6 shadow-pop-pink">
@@ -175,6 +182,36 @@ function AdminPage() {
   const [rewardMode, setRewardMode] = useState<"immediate" | "next_visit">("immediate");
   const [rewardRows, setRewardRows] = useState<{ name: string; quota: number }[]>([]);
   const [savedMsg, setSavedMsg] = useState<string | null>(null);
+  const [logoPath, setLogoPath] = useState<string | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [showPhones, setShowPhones] = useState(false);
+
+  async function handleLogoFile(file: File | null) {
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      setSavedMsg("Le logo doit peser moins de 2 Mo.");
+      return;
+    }
+    setUploading(true);
+    try {
+      const { data: s } = await supabase.auth.getSession();
+      const uid = s.session?.user.id;
+      if (!uid) throw new Error("no session");
+      const ext = (file.name.split(".").pop() ?? "png").toLowerCase();
+      const path = `${uid}/logo-${Date.now()}.${ext}`;
+      const { error } = await supabase.storage
+        .from("merchant-logos")
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (error) throw error;
+      setLogoPath(path);
+      setLogoPreview(URL.createObjectURL(file));
+      setSavedMsg("Logo prêt : cliquez sur Enregistrer pour l'appliquer.");
+    } catch {
+      setSavedMsg("Envoi du logo impossible, réessayez.");
+    }
+    setUploading(false);
+  }
 
   useEffect(() => {
     if (!data) return;
@@ -183,6 +220,8 @@ function AdminPage() {
     setFrequency((data.rewards[0]?.frequency as "day" | "week") ?? "week");
     setRewardMode(data.merchant.reward_mode === "next_visit" ? "next_visit" : "immediate");
     setRewardRows(data.rewards.map((r) => ({ name: r.name, quota: r.quota })));
+    setLogoPath(null);
+    setLogoPreview(data.logoUrl ?? null);
   }, [data]);
 
   async function saveConfig() {
@@ -196,6 +235,7 @@ function AdminPage() {
           frequency,
           rewardMode,
           rewards: rewardRows.map((r) => ({ name: r.name.trim(), quota: Number(r.quota) || 1 })),
+          ...(logoPath ? { logoPath } : {}),
           completeOnboarding: true,
         },
       });
@@ -345,6 +385,36 @@ function AdminPage() {
         </button>
       </Card>
 
+      <Card title="Logo de votre commerce">
+        <div className="flex flex-wrap items-center gap-4">
+          {logoPreview ? (
+            <img
+              src={logoPreview}
+              alt="Votre logo"
+              className="ink-border-thick h-24 w-24 rounded-full bg-white object-contain p-2"
+            />
+          ) : (
+            <div className="ink-border flex h-24 w-24 items-center justify-center rounded-full bg-yellow/30 text-2xl">
+              🖼️
+            </div>
+          )}
+          <div>
+            <label className="ink-border inline-block cursor-pointer rounded-full bg-yellow/40 px-6 py-3 font-extrabold uppercase">
+              {uploading ? "Envoi..." : logoPreview ? "Changer de logo" : "Choisir une image"}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => void handleLogoFile(e.target.files?.[0] ?? null)}
+              />
+            </label>
+            <p className="mt-2 text-xs font-bold text-ink/60">
+              Carré, moins de 2 Mo. Il s'affiche sur votre page de jeu après enregistrement.
+            </p>
+          </div>
+        </div>
+      </Card>
+
       <Card title="Configuration de la roue">
         <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {GOALS.map((g) => (
@@ -489,12 +559,40 @@ function AdminPage() {
       )}
 
       <Card title={`Clients (${data.clients.length})`}>
-        <button
-          onClick={exportCsv}
-          className="ink-border-thick min-h-[52px] rounded-full bg-green px-6 font-extrabold uppercase text-white shadow-pop-ink"
-        >
-          Exporter les clients en CSV 📥
-        </button>
+        <div className="mb-4 flex flex-wrap gap-3">
+          <button
+            onClick={exportCsv}
+            className="ink-border-thick min-h-[52px] rounded-full bg-green px-6 font-extrabold uppercase text-white shadow-pop-ink"
+          >
+            Exporter les clients en CSV 📥
+          </button>
+          <button
+            onClick={() => setShowPhones((v) => !v)}
+            className="ink-border min-h-[52px] rounded-full bg-white px-6 font-extrabold uppercase"
+          >
+            {showPhones ? "Masquer les numéros 🙈" : "Afficher les numéros 👁️"}
+          </button>
+        </div>
+        {data.clients.length === 0 ? (
+          <p className="text-sm font-bold text-ink/70">Aucun client pour le moment.</p>
+        ) : (
+          <div className="max-h-80 space-y-2 overflow-y-auto">
+            {data.clients.slice(0, 100).map((c) => (
+              <div
+                key={c.id}
+                className="ink-border flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-white px-4 py-3"
+              >
+                <span className="font-extrabold">{c.name ?? "—"}</span>
+                <span className="font-bold text-ink/70">
+                  {showPhones ? (c.phone ?? "—") : maskPhone(c.phone)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+        <p className="mt-3 text-xs font-bold text-ink/50">
+          Les numéros sont masqués par défaut. Ils restent complets dans l'export CSV.
+        </p>
       </Card>
 
       <section className="mb-10 rounded-3xl border-4 border-red-500 bg-white p-6">
