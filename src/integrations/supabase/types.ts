@@ -75,6 +75,7 @@ export type Database = {
           onboarding_completed: boolean
           owner_id: string | null
           phone: string | null
+          reward_mode: string
           slug: string
           status: string
           trial_ends_at: string | null
@@ -92,6 +93,7 @@ export type Database = {
           onboarding_completed?: boolean
           owner_id?: string | null
           phone?: string | null
+          reward_mode?: string
           slug: string
           status?: string
           trial_ends_at?: string | null
@@ -109,6 +111,7 @@ export type Database = {
           onboarding_completed?: boolean
           owner_id?: string | null
           phone?: string | null
+          reward_mode?: string
           slug?: string
           status?: string
           trial_ends_at?: string | null

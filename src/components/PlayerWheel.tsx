@@ -44,6 +44,7 @@ export default function PlayerWheel({ merchant }: { merchant: PublicMerchant }) 
   const [spinning, setSpinning] = useState(false);
   const [result, setResult] = useState<Segment | null>(null);
   const [winCode, setWinCode] = useState<string | null>(null);
+  const [spinError, setSpinError] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -65,8 +66,9 @@ export default function PlayerWheel({ merchant }: { merchant: PublicMerchant }) 
         }
       }
     }
+    if (localStorage.getItem(clientKey)) setContactSaved(true);
     setReady(true);
-  }, [navigate, homePath, reviewedKey, spunKey, spunAtKey]);
+  }, [navigate, homePath, reviewedKey, spunKey, spunAtKey, clientKey]);
 
   const segments: Segment[] = useMemo(() => {
     const rewardSegments = merchant.rewards.map((r, i) => ({
@@ -108,25 +110,48 @@ export default function PlayerWheel({ merchant }: { merchant: PublicMerchant }) 
   }
 
   async function handleSpin() {
-    if (spinning || alreadySpun || !contactSaved) return;
+    if (spinning || alreadySpun) return;
+    setSpinError(null);
+    setResult(null);
+    setWinCode(null);
     setSpinning(true);
 
-    const clientId = localStorage.getItem(clientKey);
-    const { rewardId, code } = await spinWheel({
-      data: {
-        slug: merchant.slug,
-        clientId: clientId && /^[0-9a-f-]{36}$/i.test(clientId) ? clientId : null,
-      },
-    });
+    // L'animation démarre immédiatement, même si la réponse serveur tarde.
+    const spinStartedAt = Date.now();
+    setRotation((r) => r + 3 * 360);
+
+    const storedId = typeof window !== "undefined" ? localStorage.getItem(clientKey) : null;
+    let rewardId: string | null = null;
+    let code: string | null = null;
+    try {
+      const res = await spinWheel({
+        data: {
+          slug: merchant.slug,
+          clientId: storedId && /^[0-9a-f-]{36}$/i.test(storedId) ? storedId : null,
+        },
+      });
+      rewardId = res.rewardId;
+      code = res.code;
+    } catch (err) {
+      console.error("[rollsy] spin failed", err);
+      setSpinning(false);
+      setSpinError("Le tirage a échoué, retentez dans un instant.");
+      return;
+    }
+
     const outcome: Segment = segments.find((s) => s.rewardId === rewardId) ?? LOSE_SEGMENT;
     const foundIdx = segments.findIndex((s) => s.rewardId === outcome.rewardId && s.label === outcome.label);
     const idx = foundIdx >= 0 ? foundIdx : segments.length - 1;
     const targetAngle = idx * segAngle + segAngle / 2;
-    const currentMod = ((rotation % 360) + 360) % 360;
-    const desiredMod = (((360 - targetAngle) % 360) + 360) % 360;
-    const delta = (((desiredMod - currentMod) % 360) + 360) % 360;
-    setRotation(rotation + 5 * 360 + delta);
 
+    setRotation((current) => {
+      const currentMod = ((current % 360) + 360) % 360;
+      const desiredMod = (((360 - targetAngle) % 360) + 360) % 360;
+      const delta = (((desiredMod - currentMod) % 360) + 360) % 360;
+      return current + 4 * 360 + delta;
+    });
+
+    const elapsed = Date.now() - spinStartedAt;
     setTimeout(() => {
       setResult(outcome);
       setSpinning(false);
@@ -139,7 +164,7 @@ export default function PlayerWheel({ merchant }: { merchant: PublicMerchant }) 
         setWinCode(code);
         fireConfetti();
       }
-    }, 4200);
+    }, Math.max(600, 4200 - elapsed));
   }
 
   if (!ready) return null;
@@ -256,6 +281,11 @@ export default function PlayerWheel({ merchant }: { merchant: PublicMerchant }) 
               {spinning ? "🎰 Ça tourne..." : "Tourner la roue 🎉"}
             </motion.button>
           )}
+          {spinError && (
+            <p className="ink-border rounded-2xl bg-orange px-4 py-3 text-sm font-extrabold text-white">
+              {spinError}
+            </p>
+          )}
           <AnimatePresence>
             {result && !spinning && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center">
@@ -264,8 +294,18 @@ export default function PlayerWheel({ merchant }: { merchant: PublicMerchant }) 
                     <p className="font-display text-2xl font-extrabold" style={{ color: "#FF3DA6" }}>
                       Gagné : {result.label} 🎉
                     </p>
-                    <p className="mt-2 text-lg font-bold">Code à présenter en caisse : {winCode}</p>
-                    <p className="text-sm text-ink/60">À utiliser lors de votre prochain achat.</p>
+                    {merchant.rewardMode === "next_visit" && winCode ? (
+                      <>
+                        <p className="mt-2 text-lg font-bold">Votre code : {winCode}</p>
+                        <p className="text-sm text-ink/60">
+                          À présenter en caisse lors de votre prochain passage (valable une seule fois).
+                        </p>
+                      </>
+                    ) : (
+                      <p className="mt-2 text-lg font-bold">
+                        Venez récupérer votre gain directement en caisse 🎁
+                      </p>
+                    )}
                   </>
                 ) : (
                   <p className="font-display text-2xl font-extrabold">

@@ -36,6 +36,7 @@ function OnboardingPage() {
     Array.from({ length: 4 }, (_, i) => ({ name: "", quota: i === 0 ? 3 : 1 })),
   );
   const [frequency, setFrequency] = useState<"day" | "week">("week");
+  const [rewardMode, setRewardMode] = useState<"immediate" | "next_visit">("immediate");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -76,6 +77,7 @@ function OnboardingPage() {
           goalType,
           goalUrl: goalUrl.trim(),
           frequency,
+          rewardMode,
           rewards: rewards.map((r) => ({ name: r.name.trim(), quota: Number(r.quota) || 1 })),
           completeOnboarding: true,
         },
@@ -136,8 +138,43 @@ function OnboardingPage() {
                   </option>
                 ))}
               </select>
+              <p className="ink-border mt-3 rounded-2xl bg-orange/15 px-4 py-3 text-sm font-bold">
+                ⚠️ Attention : si vous avez beaucoup de joueurs mais peu de victoires autorisées par
+                jour/semaine, l'expérience sera frustrante pour vos clients. Adaptez le nombre de
+                récompenses et la fréquence de gains à votre trafic réel.
+              </p>
             </label>
           </>
+        )}
+
+        {step === 2 && (
+          <div className="mb-5">
+            <p className="mb-2 text-sm font-extrabold">
+              Voulez-vous que vos clients récupèrent leur récompense immédiatement ou lors de leur
+              prochain passage ?
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              {([
+                ["immediate", "Immédiatement 🎁"],
+                ["next_visit", "Prochain passage 🎫"],
+              ] as const).map(([value, label]) => (
+                <button
+                  key={value}
+                  onClick={() => setRewardMode(value)}
+                  className={`ink-border min-h-[56px] rounded-2xl px-3 font-extrabold ${
+                    rewardMode === value ? "bg-green text-white" : "bg-yellow/30"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <p className="mt-2 text-xs font-bold text-ink/60">
+              {rewardMode === "immediate"
+                ? "Le joueur verra : « Venez récupérer votre gain directement en caisse »."
+                : "Le joueur recevra un code à usage unique à présenter lors de son prochain passage."}
+            </p>
+          </div>
         )}
 
         {step === 2 &&
