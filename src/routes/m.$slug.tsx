@@ -4,7 +4,7 @@ import { fetchMerchant } from "@/lib/rollsy.functions";
 
 export const Route = createFileRoute("/m/$slug")({
   head: ({ loaderData }) => {
-    const name = loaderData?.companyName ?? "Rollsy";
+    const name = (loaderData as { companyName?: string } | undefined)?.companyName ?? "Rollsy";
     return {
       meta: [
         { title: `${name} — Tentez votre chance 🎉 | Rollsy` },
