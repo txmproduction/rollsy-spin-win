@@ -18,6 +18,7 @@ import { Route as ConfirmationRouteImport } from './routes/confirmation'
 import { Route as InscriptionRouteImport } from './routes/inscription'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as RoueRouteImport } from './routes/roue'
+import { Route as SuperAdminRouteImport } from './routes/super-admin'
 import { Route as MSlugIndexRouteImport } from './routes/m.$slug.index'
 import { Route as MSlugRoueRouteImport } from './routes/m.$slug.roue'
 
@@ -66,6 +67,11 @@ const RoueRoute = RoueRouteImport.update({
   path: '/roue',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SuperAdminRoute = SuperAdminRouteImport.update({
+  id: '/super-admin',
+  path: '/super-admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MSlugIndexRoute = MSlugIndexRouteImport.update({
   id: '/m/$slug/',
   path: '/m/$slug/',
@@ -87,6 +93,7 @@ export interface FileRoutesByFullPath {
   '/inscription': typeof InscriptionRoute
   '/onboarding': typeof OnboardingRoute
   '/roue': typeof RoueRoute
+  '/super-admin': typeof SuperAdminRoute
   '/m/$slug/roue': typeof MSlugRoueRoute
   '/m/$slug/': typeof MSlugIndexRoute
 }
@@ -100,6 +107,7 @@ export interface FileRoutesByTo {
   '/inscription': typeof InscriptionRoute
   '/onboarding': typeof OnboardingRoute
   '/roue': typeof RoueRoute
+  '/super-admin': typeof SuperAdminRoute
   '/m/$slug/roue': typeof MSlugRoueRoute
   '/m/$slug': typeof MSlugIndexRoute
 }
@@ -114,6 +122,7 @@ export interface FileRoutesById {
   '/inscription': typeof InscriptionRoute
   '/onboarding': typeof OnboardingRoute
   '/roue': typeof RoueRoute
+  '/super-admin': typeof SuperAdminRoute
   '/m/$slug/roue': typeof MSlugRoueRoute
   '/m/$slug/': typeof MSlugIndexRoute
 }
@@ -129,6 +138,7 @@ export interface FileRouteTypes {
     | '/inscription'
     | '/onboarding'
     | '/roue'
+    | '/super-admin'
     | '/m/$slug/roue'
     | '/m/$slug/'
   fileRoutesByTo: FileRoutesByTo
@@ -142,6 +152,7 @@ export interface FileRouteTypes {
     | '/inscription'
     | '/onboarding'
     | '/roue'
+    | '/super-admin'
     | '/m/$slug/roue'
     | '/m/$slug'
   id:
@@ -155,6 +166,7 @@ export interface FileRouteTypes {
     | '/inscription'
     | '/onboarding'
     | '/roue'
+    | '/super-admin'
     | '/m/$slug/roue'
     | '/m/$slug/'
   fileRoutesById: FileRoutesById
@@ -169,6 +181,7 @@ export interface RootRouteChildren {
   InscriptionRoute: typeof InscriptionRoute
   OnboardingRoute: typeof OnboardingRoute
   RoueRoute: typeof RoueRoute
+  SuperAdminRoute: typeof SuperAdminRoute
   MSlugRoueRoute: typeof MSlugRoueRoute
   MSlugIndexRoute: typeof MSlugIndexRoute
 }
@@ -238,6 +251,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RoueRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/super-admin': {
+      id: '/super-admin'
+      path: '/super-admin'
+      fullPath: '/super-admin'
+      preLoaderRoute: typeof SuperAdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/m/$slug/': {
       id: '/m/$slug/'
       path: '/m/$slug'
@@ -265,6 +285,7 @@ const rootRouteChildren: RootRouteChildren = {
   InscriptionRoute: InscriptionRoute,
   OnboardingRoute: OnboardingRoute,
   RoueRoute: RoueRoute,
+  SuperAdminRoute: SuperAdminRoute,
   MSlugRoueRoute: MSlugRoueRoute,
   MSlugIndexRoute: MSlugIndexRoute,
 }

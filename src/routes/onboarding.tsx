@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { AccessGate } from "@/components/AccessGate";
 import { completeSignup, saveWheelSetup } from "@/lib/rollsy.functions";
 
 export const Route = createFileRoute("/onboarding")({
@@ -15,8 +16,16 @@ export const Route = createFileRoute("/onboarding")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: OnboardingPage,
+  component: OnboardingPageGated,
 });
+
+function OnboardingPageGated() {
+  return (
+    <AccessGate>
+      <OnboardingPage />
+    </AccessGate>
+  );
+}
 
 const GOALS = [
   { value: "google", label: "Avis Google ⭐" },

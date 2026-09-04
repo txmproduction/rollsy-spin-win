@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { QRCodeCanvas } from "qrcode.react";
 import { supabase } from "@/integrations/supabase/client";
+import { AccessGate } from "@/components/AccessGate";
 import {
   getMerchantAdminData,
   resetRollsyData,
@@ -22,8 +23,16 @@ export const Route = createFileRoute("/admin")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: AdminPage,
+  component: AdminPageGated,
 });
+
+function AdminPageGated() {
+  return (
+    <AccessGate>
+      <AdminPage />
+    </AccessGate>
+  );
+}
 
 type AdminData = Awaited<ReturnType<typeof getMerchantAdminData>>;
 
