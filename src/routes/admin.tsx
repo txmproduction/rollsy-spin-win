@@ -7,6 +7,7 @@ import {
   resetRollsyData,
   saveWheelSetup,
   completeSignup,
+  markSpinCodeUsed,
 } from "@/lib/rollsy.functions";
 
 export const Route = createFileRoute("/admin")({
@@ -171,6 +172,7 @@ function AdminPage() {
   const [goalType, setGoalType] = useState("google");
   const [goalUrl, setGoalUrl] = useState("");
   const [frequency, setFrequency] = useState<"day" | "week">("week");
+  const [rewardMode, setRewardMode] = useState<"immediate" | "next_visit">("immediate");
   const [rewardRows, setRewardRows] = useState<{ name: string; quota: number }[]>([]);
   const [savedMsg, setSavedMsg] = useState<string | null>(null);
 
@@ -179,6 +181,7 @@ function AdminPage() {
     setGoalType(data.merchant.goal_type ?? "google");
     setGoalUrl(data.merchant.goal_url ?? "");
     setFrequency((data.rewards[0]?.frequency as "day" | "week") ?? "week");
+    setRewardMode(data.merchant.reward_mode === "next_visit" ? "next_visit" : "immediate");
     setRewardRows(data.rewards.map((r) => ({ name: r.name, quota: r.quota })));
   }, [data]);
 
@@ -191,6 +194,7 @@ function AdminPage() {
           goalType,
           goalUrl: goalUrl.trim(),
           frequency,
+          rewardMode,
           rewards: rewardRows.map((r) => ({ name: r.name.trim(), quota: Number(r.quota) || 1 })),
           completeOnboarding: true,
         },
@@ -201,6 +205,21 @@ function AdminPage() {
       setSavedMsg("Échec de l'enregistrement.");
     }
     setBusy(false);
+  }
+
+  const codeSpins = useMemo(
+    () => (data?.spins ?? []).filter((s) => s.result === "win" && s.code),
+    [data],
+  );
+
+  async function toggleCode(spinId: string, used: boolean) {
+    setBusy(true);
+    try {
+      await markSpinCodeUsed({ data: { spinId, used } });
+      await load();
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function handleReset() {
@@ -361,6 +380,30 @@ function AdminPage() {
             </button>
           ))}
         </div>
+        <div className="mb-4">
+          <p className="mb-2 text-sm font-extrabold">Récupération de la récompense</p>
+          <div className="grid grid-cols-2 gap-3">
+            {([
+              ["immediate", "Immédiatement 🎁"],
+              ["next_visit", "Prochain passage 🎫"],
+            ] as const).map(([value, label]) => (
+              <button
+                key={value}
+                onClick={() => setRewardMode(value)}
+                className={`ink-border min-h-[48px] rounded-2xl px-3 font-extrabold ${
+                  rewardMode === value ? "bg-green text-white" : "bg-yellow/30"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <p className="ink-border mb-4 rounded-2xl bg-orange/15 px-4 py-3 text-sm font-bold">
+          ⚠️ Attention : si vous avez beaucoup de joueurs mais peu de victoires autorisées par
+          jour/semaine, l'expérience sera frustrante pour vos clients. Adaptez le nombre de
+          récompenses et la fréquence de gains à votre trafic réel.
+        </p>
         {rewardRows.map((r, i) => (
           <div key={i} className="mb-3 flex gap-2">
             <input
@@ -408,6 +451,42 @@ function AdminPage() {
         </div>
         {savedMsg && <p className="mt-3 text-sm font-extrabold">{savedMsg}</p>}
       </Card>
+
+      {rewardMode === "next_visit" && (
+        <Card title="Codes de récompense">
+          {codeSpins.length === 0 ? (
+            <p className="text-sm font-bold text-ink/70">Aucun code généré pour le moment.</p>
+          ) : (
+            <div className="space-y-2">
+              {codeSpins.map((sp) => {
+                const reward = data.rewards.find((r) => r.id === sp.reward_id);
+                return (
+                  <div
+                    key={sp.id}
+                    className="ink-border flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-white px-4 py-3"
+                  >
+                    <div>
+                      <p className="font-extrabold">{sp.code}</p>
+                      <p className="text-xs font-bold text-ink/60">
+                        {reward?.name ?? "Lot"} · {new Date(sp.created_at).toLocaleString("fr-FR")}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => toggleCode(sp.id, !sp.code_used)}
+                      disabled={busy}
+                      className={`ink-border min-h-[44px] rounded-full px-4 text-sm font-extrabold uppercase disabled:opacity-50 ${
+                        sp.code_used ? "bg-white text-ink/60" : "bg-green text-white"
+                      }`}
+                    >
+                      {sp.code_used ? "Utilisé ✓ (annuler)" : "Marquer utilisé"}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </Card>
+      )}
 
       <Card title={`Clients (${data.clients.length})`}>
         <button
