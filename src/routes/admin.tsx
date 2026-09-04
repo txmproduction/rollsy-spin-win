@@ -4,6 +4,7 @@ import { QRCodeCanvas } from "qrcode.react";
 import { supabase } from "@/integrations/supabase/client";
 import { AccessGate } from "@/components/AccessGate";
 import {
+import { AdminNotifications } from "@/components/AdminNotifications";
   getMerchantAdminData,
   resetRollsyData,
   saveWheelSetup,
