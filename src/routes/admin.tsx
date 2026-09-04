@@ -208,7 +208,6 @@ function AdminPage() {
   const [logoPath, setLogoPath] = useState<string | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [showPhones, setShowPhones] = useState(false);
 
   async function handleLogoFile(file: File | null) {
     if (!file) return;
