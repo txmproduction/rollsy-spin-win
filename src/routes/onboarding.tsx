@@ -39,6 +39,35 @@ function OnboardingPage() {
   const [rewardMode, setRewardMode] = useState<"immediate" | "next_visit">("immediate");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [logoPath, setLogoPath] = useState<string | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  async function handleLogoFile(file: File | null) {
+    if (!file) return;
+    setError(null);
+    if (file.size > 2 * 1024 * 1024) {
+      setError("Le logo doit peser moins de 2 Mo.");
+      return;
+    }
+    setUploading(true);
+    try {
+      const { data: s } = await supabase.auth.getSession();
+      const uid = s.session?.user.id;
+      if (!uid) throw new Error("no session");
+      const ext = (file.name.split(".").pop() ?? "png").toLowerCase();
+      const path = `${uid}/logo-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("merchant-logos")
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (upErr) throw upErr;
+      setLogoPath(path);
+      setLogoPreview(URL.createObjectURL(file));
+    } catch {
+      setError("Envoi du logo impossible, réessayez.");
+    }
+    setUploading(false);
+  }
 
   useEffect(() => {
     const run = async () => {
@@ -79,6 +108,7 @@ function OnboardingPage() {
           frequency,
           rewardMode,
           rewards: rewards.map((r) => ({ name: r.name.trim(), quota: Number(r.quota) || 1 })),
+          ...(logoPath ? { logoPath } : {}),
           completeOnboarding: true,
         },
       });
@@ -94,10 +124,16 @@ function OnboardingPage() {
   return (
     <main className="mx-auto max-w-lg px-4 py-12">
       <p className="mb-2 text-sm font-extrabold uppercase tracking-widest text-ink/60">
-        Étape {step} sur 3
+        Étape {step} sur 4
       </p>
       <h1 className="mb-8 font-display text-3xl font-extrabold">
-        {step === 1 ? "Votre objectif 🎯" : step === 2 ? "Vos récompenses 🎁" : "Fréquence des gains ⏱️"}
+        {step === 1
+          ? "Votre objectif 🎯"
+          : step === 2
+            ? "Vos récompenses 🎁"
+            : step === 3
+              ? "Fréquence des gains ⏱️"
+              : "Votre logo 🖼️"}
       </h1>
 
       <div className="ink-border-thick rounded-3xl bg-white p-6 shadow-pop-pink">
@@ -218,6 +254,34 @@ function OnboardingPage() {
           </div>
         )}
 
+        {step === 4 && (
+          <div className="text-center">
+            <p className="mb-4 text-sm font-bold text-ink/70">
+              Ajoutez le logo de votre commerce : il s'affichera sur votre page de jeu, à la place
+              réservée à votre marque. Format carré conseillé, moins de 2 Mo.
+            </p>
+            {logoPreview && (
+              <img
+                src={logoPreview}
+                alt="Aperçu de votre logo"
+                className="ink-border-thick mx-auto mb-4 h-28 w-28 rounded-full bg-white object-contain p-2"
+              />
+            )}
+            <label className="ink-border inline-block min-h-[52px] cursor-pointer rounded-full bg-yellow/40 px-6 py-3 font-extrabold uppercase">
+              {uploading ? "Envoi..." : logoPath ? "Changer de logo" : "Choisir une image"}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => void handleLogoFile(e.target.files?.[0] ?? null)}
+              />
+            </label>
+            <p className="mt-3 text-xs font-bold text-ink/50">
+              Vous pouvez passer cette étape et l'ajouter plus tard dans votre espace.
+            </p>
+          </div>
+        )}
+
         {error && <p className="mt-4 text-sm font-extrabold text-red-600">{error}</p>}
 
         <div className="mt-6 flex gap-3">
@@ -230,11 +294,11 @@ function OnboardingPage() {
             </button>
           )}
           <button
-            onClick={() => (step < 3 ? setStep(step + 1) : finish())}
-            disabled={saving}
+            onClick={() => (step < 4 ? setStep(step + 1) : finish())}
+            disabled={saving || uploading}
             className="ink-border-thick min-h-[52px] flex-1 rounded-full bg-pink px-4 font-extrabold uppercase text-white shadow-pop-ink disabled:opacity-50"
           >
-            {step < 3 ? "Continuer →" : saving ? "Enregistrement..." : "Terminer 🎉"}
+            {step < 4 ? "Continuer →" : saving ? "Enregistrement..." : "Terminer 🎉"}
           </button>
         </div>
       </div>
