@@ -199,14 +199,32 @@ export default function PlayerWheel({ merchant }: { merchant: PublicMerchant }) 
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Votre prénom"
+            autoComplete="given-name"
             className="ink-border mb-3 min-h-[52px] w-full rounded-full bg-yellow/30 px-5 font-bold outline-none"
           />
           <input
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="Votre téléphone"
-            className="ink-border mb-4 min-h-[52px] w-full rounded-full bg-yellow/30 px-5 font-bold outline-none"
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            placeholder="Votre nom"
+            autoComplete="family-name"
+            className="ink-border mb-3 min-h-[52px] w-full rounded-full bg-yellow/30 px-5 font-bold outline-none"
           />
+          <input
+            type="tel"
+            inputMode="tel"
+            value={phone}
+            onChange={(e) => {
+              setPhone(e.target.value.replace(/[^\d+ .-]/g, ""));
+              setPhoneError(null);
+            }}
+            placeholder="Votre téléphone (06 12 34 56 78)"
+            autoComplete="tel"
+            className="ink-border mb-2 min-h-[52px] w-full rounded-full bg-yellow/30 px-5 font-bold outline-none"
+          />
+          {phoneError && (
+            <p className="mb-3 text-sm font-extrabold text-red-600">{phoneError}</p>
+          )}
+
           <label className="mb-3 flex cursor-pointer items-start gap-3 text-sm font-bold">
             <input
               type="checkbox"
