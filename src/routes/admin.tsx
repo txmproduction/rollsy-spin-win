@@ -367,6 +367,7 @@ function AdminPage() {
           <p className="font-bold text-ink/60">Espace commerçant Rollsy</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {isSuper && <AdminNotifications />}
           {isSuper && (
             <Link
               to="/super-admin"
