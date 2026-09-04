@@ -342,6 +342,11 @@ function AdminPage() {
             Se connecter
           </button>
         </form>
+        <p className="mt-4 text-center text-sm font-bold text-ink/60">
+          <Link to="/mot-de-passe-oublie" className="underline">
+            Mot de passe oublié ?
+          </Link>
+        </p>
         <p className="mt-6 text-center text-sm font-bold text-ink/60">
           Pas encore de compte ?{" "}
           <Link to="/inscription" className="underline">
