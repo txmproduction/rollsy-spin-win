@@ -66,9 +66,9 @@ const MSlugIndexRoute = MSlugIndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const MSlugRoueRoute = MSlugRoueRouteImport.update({
-  id: '/roue',
-  path: '/roue',
-  getParentRoute: () => MSlugRoute,
+  id: '/m/$slug/roue',
+  path: '/m/$slug/roue',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -156,6 +156,7 @@ export interface RootRouteChildren {
   InscriptionRoute: typeof InscriptionRoute
   OnboardingRoute: typeof OnboardingRoute
   RoueRoute: typeof RoueRoute
+  MSlugRoueRoute: typeof MSlugRoueRoute
   MSlugIndexRoute: typeof MSlugIndexRoute
 }
 
@@ -226,10 +227,10 @@ declare module '@tanstack/react-router' {
     }
     '/m/$slug/roue': {
       id: '/m/$slug/roue'
-      path: '/roue'
+      path: '/m/$slug/roue'
       fullPath: '/m/$slug/roue'
       preLoaderRoute: typeof MSlugRoueRouteImport
-      parentRoute: typeof MSlugRoute
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -243,6 +244,7 @@ const rootRouteChildren: RootRouteChildren = {
   InscriptionRoute: InscriptionRoute,
   OnboardingRoute: OnboardingRoute,
   RoueRoute: RoueRoute,
+  MSlugRoueRoute: MSlugRoueRoute,
   MSlugIndexRoute: MSlugIndexRoute,
 }
 export const routeTree = rootRouteImport
