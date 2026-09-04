@@ -61,6 +61,29 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
   );
 }
 
+function ClientRow({ client }: { client: AdminData["clients"][number] }) {
+  const [revealed, setRevealed] = useState(false);
+  const hasPhone = !!client.phone;
+
+  return (
+    <div className="ink-border flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-white px-4 py-3">
+      <span className="font-extrabold">{client.name?.trim() || "—"}</span>
+      <div className="flex items-center gap-2">
+        <span className="font-bold text-ink/70">{revealed ? (client.phone ?? "—") : maskPhone(client.phone)}</span>
+        {hasPhone && (
+          <button
+            onClick={() => setRevealed((v) => !v)}
+            className="ink-border min-h-[36px] rounded-full bg-yellow/40 px-3 text-sm font-extrabold"
+            aria-label={revealed ? "Masquer le numéro" : "Voir le numéro"}
+          >
+            {revealed ? "🙈" : "👁️ Voir"}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function AdminPage() {
   const navigate = useNavigate();
   const [booting, setBooting] = useState(true);
