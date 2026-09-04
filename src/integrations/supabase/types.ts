@@ -72,6 +72,7 @@ export type Database = {
           goal_url: string | null
           id: string
           last_name: string | null
+          logo_path: string | null
           onboarding_completed: boolean
           owner_id: string | null
           phone: string | null
@@ -90,6 +91,7 @@ export type Database = {
           goal_url?: string | null
           id?: string
           last_name?: string | null
+          logo_path?: string | null
           onboarding_completed?: boolean
           owner_id?: string | null
           phone?: string | null
@@ -108,6 +110,7 @@ export type Database = {
           goal_url?: string | null
           id?: string
           last_name?: string | null
+          logo_path?: string | null
           onboarding_completed?: boolean
           owner_id?: string | null
           phone?: string | null
