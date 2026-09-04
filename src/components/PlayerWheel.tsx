@@ -253,7 +253,7 @@ export default function PlayerWheel({ merchant }: { merchant: PublicMerchant }) 
 
           <button
             onClick={saveContact}
-            disabled={!terms || !name.trim() || !phone.trim()}
+            disabled={!terms || !name.trim() || !lastName.trim() || !phoneValid}
             className="ink-border-thick min-h-[52px] w-full rounded-full bg-pink px-6 font-extrabold uppercase text-white shadow-pop-ink disabled:cursor-not-allowed disabled:opacity-40"
           >
             Continuer 🚀
