@@ -111,7 +111,7 @@ function AdminPage() {
       const d = await getMerchantAdminData();
       setData(d);
       try {
-        setIsSuper(await amISuperAdmin());
+        setIsSuper((await amISuperAdmin()).superAdmin);
       } catch {
         setIsSuper(false);
       }
