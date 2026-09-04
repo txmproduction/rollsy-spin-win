@@ -75,6 +75,18 @@ export default function PlayerLanding({ merchant }: { merchant: PublicMerchant }
           🎪 {merchant.companyName}
         </motion.div>
 
+        {merchant.logoUrl && (
+          <motion.img
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ type: "spring", damping: 12 }}
+            src={merchant.logoUrl}
+            alt={`Logo ${merchant.companyName}`}
+            className="ink-border-thick mb-6 h-28 w-28 rounded-full bg-white object-contain p-2 shadow-pop-ink"
+          />
+        )}
+
+
         <motion.h1
           initial={{ opacity: 0, scale: 0.7 }}
           animate={{ opacity: 1, scale: 1 }}
