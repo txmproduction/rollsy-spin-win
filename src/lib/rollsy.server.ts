@@ -367,6 +367,14 @@ export async function saveMerchantSetup(userId: string, input: z.infer<typeof se
     console.error("[rollsy] rewards insert failed", insErr);
     throw new Error("Échec de la mise à jour des récompenses.");
   }
+  if (input.completeOnboarding && !m.onboarding_completed) {
+    await recordAdminEvent(
+      "wheel_created",
+      "Nouvelle roue créée",
+      `${(m.company_name as string) ?? "Un commerçant"} vient de configurer sa roue (${input.rewards.length} récompenses).`,
+      m.id as string,
+    );
+  }
   return { ok: true as const, slug: m.slug as string };
 }
 
