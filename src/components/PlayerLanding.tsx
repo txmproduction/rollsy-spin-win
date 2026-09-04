@@ -15,7 +15,10 @@ export default function PlayerLanding({ merchant }: { merchant: PublicMerchant }
   const navigate = useNavigate();
   const [warning, setWarning] = useState<string | null>(null);
   const reviewedKey = `hasReviewed:${merchant.slug}`;
-  const wheelPath = merchant.isDefault ? "/roue" : `/m/${merchant.slug}/roue`;
+  const goToWheel = () =>
+    merchant.isDefault
+      ? navigate({ to: "/roue" })
+      : navigate({ to: "/m/$slug/roue", params: { slug: merchant.slug } });
 
   const handleReview = () => {
     if (typeof window === "undefined") return;
@@ -26,7 +29,7 @@ export default function PlayerLanding({ merchant }: { merchant: PublicMerchant }
   const handleSpinAccess = () => {
     if (typeof window === "undefined") return;
     if (localStorage.getItem(reviewedKey) === "true") {
-      navigate({ to: wheelPath });
+      void goToWheel();
     } else {
       setWarning("Faites l'action d'abord pour débloquer la roue ! ⭐");
     }

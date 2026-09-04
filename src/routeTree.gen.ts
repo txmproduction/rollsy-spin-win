@@ -17,7 +17,7 @@ import { Route as ConfirmationRouteImport } from './routes/confirmation'
 import { Route as InscriptionRouteImport } from './routes/inscription'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as RoueRouteImport } from './routes/roue'
-import { Route as MSlugRouteImport } from './routes/m.$slug'
+import { Route as MSlugIndexRouteImport } from './routes/m.$slug.index'
 import { Route as MSlugRoueRouteImport } from './routes/m.$slug.roue'
 
 const IndexRoute = IndexRouteImport.update({
@@ -60,15 +60,15 @@ const RoueRoute = RoueRouteImport.update({
   path: '/roue',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MSlugRoute = MSlugRouteImport.update({
-  id: '/m/$slug',
-  path: '/m/$slug',
+const MSlugIndexRoute = MSlugIndexRouteImport.update({
+  id: '/m/$slug/',
+  path: '/m/$slug/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MSlugRoueRoute = MSlugRoueRouteImport.update({
-  id: '/roue',
-  path: '/roue',
-  getParentRoute: () => MSlugRoute,
+  id: '/m/$slug/roue',
+  path: '/m/$slug/roue',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -80,8 +80,8 @@ export interface FileRoutesByFullPath {
   '/inscription': typeof InscriptionRoute
   '/onboarding': typeof OnboardingRoute
   '/roue': typeof RoueRoute
-  '/m/$slug': typeof MSlugRouteWithChildren
   '/m/$slug/roue': typeof MSlugRoueRoute
+  '/m/$slug/': typeof MSlugIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -92,8 +92,8 @@ export interface FileRoutesByTo {
   '/inscription': typeof InscriptionRoute
   '/onboarding': typeof OnboardingRoute
   '/roue': typeof RoueRoute
-  '/m/$slug': typeof MSlugRouteWithChildren
   '/m/$slug/roue': typeof MSlugRoueRoute
+  '/m/$slug': typeof MSlugIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -105,8 +105,8 @@ export interface FileRoutesById {
   '/inscription': typeof InscriptionRoute
   '/onboarding': typeof OnboardingRoute
   '/roue': typeof RoueRoute
-  '/m/$slug': typeof MSlugRouteWithChildren
   '/m/$slug/roue': typeof MSlugRoueRoute
+  '/m/$slug/': typeof MSlugIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -119,8 +119,8 @@ export interface FileRouteTypes {
     | '/inscription'
     | '/onboarding'
     | '/roue'
-    | '/m/$slug'
     | '/m/$slug/roue'
+    | '/m/$slug/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -131,8 +131,8 @@ export interface FileRouteTypes {
     | '/inscription'
     | '/onboarding'
     | '/roue'
-    | '/m/$slug'
     | '/m/$slug/roue'
+    | '/m/$slug'
   id:
     | '__root__'
     | '/'
@@ -143,8 +143,8 @@ export interface FileRouteTypes {
     | '/inscription'
     | '/onboarding'
     | '/roue'
-    | '/m/$slug'
     | '/m/$slug/roue'
+    | '/m/$slug/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -156,7 +156,8 @@ export interface RootRouteChildren {
   InscriptionRoute: typeof InscriptionRoute
   OnboardingRoute: typeof OnboardingRoute
   RoueRoute: typeof RoueRoute
-  MSlugRoute: typeof MSlugRouteWithChildren
+  MSlugRoueRoute: typeof MSlugRoueRoute
+  MSlugIndexRoute: typeof MSlugIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -217,32 +218,22 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RoueRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/m/$slug': {
-      id: '/m/$slug'
+    '/m/$slug/': {
+      id: '/m/$slug/'
       path: '/m/$slug'
-      fullPath: '/m/$slug'
-      preLoaderRoute: typeof MSlugRouteImport
+      fullPath: '/m/$slug/'
+      preLoaderRoute: typeof MSlugIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/m/$slug/roue': {
       id: '/m/$slug/roue'
-      path: '/roue'
+      path: '/m/$slug/roue'
       fullPath: '/m/$slug/roue'
       preLoaderRoute: typeof MSlugRoueRouteImport
-      parentRoute: typeof MSlugRoute
+      parentRoute: typeof rootRouteImport
     }
   }
 }
-
-interface MSlugRouteChildren {
-  MSlugRoueRoute: typeof MSlugRoueRoute
-}
-
-const MSlugRouteChildren: MSlugRouteChildren = {
-  MSlugRoueRoute: MSlugRoueRoute,
-}
-
-const MSlugRouteWithChildren = MSlugRoute._addFileChildren(MSlugRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -253,7 +244,8 @@ const rootRouteChildren: RootRouteChildren = {
   InscriptionRoute: InscriptionRoute,
   OnboardingRoute: OnboardingRoute,
   RoueRoute: RoueRoute,
-  MSlugRoute: MSlugRouteWithChildren,
+  MSlugRoueRoute: MSlugRoueRoute,
+  MSlugIndexRoute: MSlugIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

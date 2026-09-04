@@ -2,7 +2,7 @@ import { createFileRoute, notFound } from "@tanstack/react-router";
 import PlayerLanding from "@/components/PlayerLanding";
 import { fetchMerchant } from "@/lib/rollsy.functions";
 
-export const Route = createFileRoute("/m/$slug")({
+export const Route = createFileRoute("/m/$slug/")({
   head: ({ loaderData }) => {
     const name = (loaderData as { companyName?: string } | undefined)?.companyName ?? "Rollsy";
     return {

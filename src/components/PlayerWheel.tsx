@@ -27,7 +27,10 @@ function isPreviewEnv(): boolean {
 
 export default function PlayerWheel({ merchant }: { merchant: PublicMerchant }) {
   const navigate = useNavigate();
-  const homePath = merchant.isDefault ? "/" : `/m/${merchant.slug}`;
+  const goHome = () =>
+    merchant.isDefault
+      ? navigate({ to: "/" })
+      : navigate({ to: "/m/$slug", params: { slug: merchant.slug } });
   const reviewedKey = `hasReviewed:${merchant.slug}`;
   const spunKey = `hasSpun:${merchant.slug}`;
   const spunAtKey = `spunAt:${merchant.slug}`;
@@ -53,7 +56,7 @@ export default function PlayerWheel({ merchant }: { merchant: PublicMerchant }) 
       localStorage.removeItem(spunAtKey);
     } else {
       if (localStorage.getItem(reviewedKey) !== "true") {
-        navigate({ to: homePath });
+        void goHome();
         return;
       }
       const spunAt = Number(localStorage.getItem(spunAtKey) || 0);
@@ -68,7 +71,7 @@ export default function PlayerWheel({ merchant }: { merchant: PublicMerchant }) 
     }
     if (localStorage.getItem(clientKey)) setContactSaved(true);
     setReady(true);
-  }, [navigate, homePath, reviewedKey, spunKey, spunAtKey, clientKey]);
+  }, [navigate, merchant.isDefault, merchant.slug, reviewedKey, spunKey, spunAtKey, clientKey]);
 
   const segments: Segment[] = useMemo(() => {
     const rewardSegments = merchant.rewards.map((r, i) => ({
@@ -229,7 +232,7 @@ export default function PlayerWheel({ merchant }: { merchant: PublicMerchant }) 
             Vous avez déjà tourné la roue ! Revenez après votre prochain avis. ⭐
           </p>
           <button
-            onClick={() => navigate({ to: homePath })}
+            onClick={() => void goHome()}
             className="ink-border-thick min-h-[52px] w-full rounded-full bg-yellow px-6 font-extrabold uppercase shadow-pop-ink"
           >
             Retour à l'accueil 🏠
