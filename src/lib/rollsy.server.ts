@@ -263,7 +263,7 @@ export async function findMerchantByOwner(userId: string) {
   const { data } = await db
     .from("merchants")
     .select(
-      "id, slug, company_name, first_name, last_name, phone, email, goal_type, goal_url, reward_mode, logo_path, status, onboarding_completed, trial_ends_at",
+      "id, slug, company_name, first_name, last_name, phone, email, goal_type, goal_url, reward_mode, logo_path, status, access_status, onboarding_completed, trial_ends_at",
     )
     .eq("owner_id", userId)
     .maybeSingle();
@@ -306,7 +306,7 @@ export async function ensureMerchantForUser(
       trial_ends_at: trialEnds.toISOString(),
     })
     .select(
-      "id, slug, company_name, first_name, last_name, phone, email, goal_type, goal_url, reward_mode, logo_path, status, onboarding_completed, trial_ends_at",
+      "id, slug, company_name, first_name, last_name, phone, email, goal_type, goal_url, reward_mode, logo_path, status, access_status, onboarding_completed, trial_ends_at",
     )
     .single();
   if (error || !data) {
@@ -422,6 +422,158 @@ export async function resetMerchantData(userId: string) {
   if (clientsRes.error) {
     console.error("[rollsy] reset clients failed", clientsRes.error);
     throw new Error("Échec de la réinitialisation des clients.");
+  }
+  return { ok: true as const };
+}
+
+// ---------- Accès (essai / permanent / suspendu) ----------
+
+export type AccessStatus = "trial" | "active" | "suspended";
+
+export type AccessState = {
+  status: AccessStatus;
+  effectiveStatus: AccessStatus;
+  daysLeft: number | null;
+  trialEndsAt: string | null;
+  blocked: boolean;
+  companyName: string | null;
+};
+
+export function computeAccess(row: {
+  access_status?: string | null;
+  trial_ends_at?: string | null;
+  company_name?: string | null;
+}): AccessState {
+  const raw = (row.access_status ?? "trial") as string;
+  const status: AccessStatus =
+    raw === "active" || raw === "suspended" || raw === "trial" ? (raw as AccessStatus) : "trial";
+  const trialEndsAt = row.trial_ends_at ?? null;
+  let daysLeft: number | null = null;
+  if (status === "trial" && trialEndsAt) {
+    const ms = new Date(trialEndsAt).getTime() - Date.now();
+    daysLeft = Math.max(0, Math.ceil(ms / 86_400_000));
+  }
+  const trialExpired = status === "trial" && (!trialEndsAt || (daysLeft ?? 0) <= 0);
+  const effectiveStatus: AccessStatus =
+    status === "suspended" || trialExpired ? "suspended" : status;
+  return {
+    status,
+    effectiveStatus,
+    daysLeft: status === "trial" ? (daysLeft ?? 0) : null,
+    trialEndsAt,
+    blocked: effectiveStatus === "suspended",
+    companyName: row.company_name ?? null,
+  };
+}
+
+export async function getAccessStateForUser(userId: string): Promise<AccessState | null> {
+  const db = await admin();
+  const { data } = await db
+    .from("merchants")
+    .select("company_name, access_status, trial_ends_at")
+    .eq("owner_id", userId)
+    .maybeSingle();
+  if (!data) return null;
+  return computeAccess(data as Record<string, string | null>);
+}
+
+export async function getAccessStateBySlug(slug: string): Promise<AccessState | null> {
+  const db = await admin();
+  const { data } = await db
+    .from("merchants")
+    .select("company_name, access_status, trial_ends_at")
+    .eq("slug", slug)
+    .maybeSingle();
+  if (!data) return null;
+  return computeAccess(data as Record<string, string | null>);
+}
+
+// ---------- Super admin ----------
+
+export const accessUpdateSchema = z.object({
+  merchantId: z.string().uuid(),
+  accessStatus: z.enum(["trial", "active", "suspended"]),
+  trialDays: z.number().int().min(1).max(365).optional(),
+});
+
+export async function assertSuperAdmin(userId: string) {
+  const db = await admin();
+  const { data } = await db
+    .from("profiles")
+    .select("is_super_admin")
+    .eq("id", userId)
+    .maybeSingle();
+  if (!data || (data as { is_super_admin?: boolean }).is_super_admin !== true) {
+    throw new Error("Accès refusé.");
+  }
+  return true;
+}
+
+export type SuperAdminRow = {
+  id: string;
+  companyName: string;
+  email: string;
+  slug: string;
+  createdAt: string;
+  participants: number;
+  wins: number;
+  accessStatus: AccessStatus;
+  daysLeft: number | null;
+  trialEndsAt: string | null;
+};
+
+export async function listAllMerchants(userId: string): Promise<SuperAdminRow[]> {
+  await assertSuperAdmin(userId);
+  const db = await admin();
+  const { data: merchants } = await db
+    .from("merchants")
+    .select("id, company_name, email, slug, created_at, access_status, trial_ends_at")
+    .order("created_at", { ascending: false });
+
+  const rows: SuperAdminRow[] = [];
+  for (const m of merchants ?? []) {
+    const id = m.id as string;
+    const [{ count: participants }, { count: wins }] = await Promise.all([
+      db.from("spins").select("id", { count: "exact", head: true }).eq("merchant_id", id),
+      db
+        .from("spins")
+        .select("id", { count: "exact", head: true })
+        .eq("merchant_id", id)
+        .eq("result", "win"),
+    ]);
+    const access = computeAccess(m as Record<string, string | null>);
+    rows.push({
+      id,
+      companyName: (m.company_name as string) ?? "—",
+      email: (m.email as string) ?? "",
+      slug: (m.slug as string) ?? "",
+      createdAt: m.created_at as string,
+      participants: participants ?? 0,
+      wins: wins ?? 0,
+      accessStatus: access.status,
+      daysLeft: access.daysLeft,
+      trialEndsAt: access.trialEndsAt,
+    });
+  }
+  return rows;
+}
+
+export async function updateMerchantAccess(
+  userId: string,
+  input: z.infer<typeof accessUpdateSchema>,
+) {
+  await assertSuperAdmin(userId);
+  const db = await admin();
+  const patch: Record<string, string | null> = { access_status: input.accessStatus };
+  if (input.accessStatus === "trial") {
+    const end = new Date();
+    end.setDate(end.getDate() + (input.trialDays ?? 14));
+    patch['trial_ends_at'] = end.toISOString();
+  }
+  const { error } = await db.from("merchants").update(patch).eq("id", input.merchantId);
+  if (error) {
+    console.error("[rollsy] access update failed", error);
+    throw new Error("Impossible de modifier l'accès de ce commerçant.");
   }
   return { ok: true as const };
 }
