@@ -3,8 +3,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { QRCodeCanvas } from "qrcode.react";
 import { supabase } from "@/integrations/supabase/client";
 import { AccessGate } from "@/components/AccessGate";
-import {
 import { AdminNotifications } from "@/components/AdminNotifications";
+import {
   getMerchantAdminData,
   resetRollsyData,
   saveWheelSetup,
