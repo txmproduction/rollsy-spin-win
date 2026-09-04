@@ -263,6 +263,7 @@ function OnboardingPage() {
               </button>
             ))}
           </div>
+          </div>
         )}
 
         {step === 4 && (
