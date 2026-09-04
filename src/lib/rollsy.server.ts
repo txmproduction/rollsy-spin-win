@@ -314,6 +314,12 @@ export async function ensureMerchantForUser(
     console.error("[rollsy] ensureMerchantForUser failed", error);
     throw new Error("Impossible de créer votre espace commerçant.");
   }
+  await recordAdminEvent(
+    "trial_started",
+    "Nouvel essai gratuit",
+    `${(data.company_name as string) ?? email} vient de créer un compte (essai gratuit de 14 jours).`,
+    data.id as string,
+  );
   return data;
 }
 
