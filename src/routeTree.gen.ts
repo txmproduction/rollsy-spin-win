@@ -16,7 +16,9 @@ import { Route as CgvRouteImport } from './routes/cgv'
 import { Route as ConfidentialiteRouteImport } from './routes/confidentialite'
 import { Route as ConfirmationRouteImport } from './routes/confirmation'
 import { Route as InscriptionRouteImport } from './routes/inscription'
+import { Route as MotDePasseOublieRouteImport } from './routes/mot-de-passe-oublie'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RoueRouteImport } from './routes/roue'
 import { Route as SuperAdminRouteImport } from './routes/super-admin'
 import { Route as MSlugIndexRouteImport } from './routes/m.$slug.index'
@@ -60,9 +62,19 @@ const InscriptionRoute = InscriptionRouteImport.update({
   path: '/inscription',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MotDePasseOublieRoute = MotDePasseOublieRouteImport.update({
+  id: '/mot-de-passe-oublie',
+  path: '/mot-de-passe-oublie',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RoueRoute = RoueRouteImport.update({
@@ -110,7 +122,9 @@ export interface FileRoutesByFullPath {
   '/confidentialite': typeof ConfidentialiteRoute
   '/confirmation': typeof ConfirmationRoute
   '/inscription': typeof InscriptionRoute
+  '/mot-de-passe-oublie': typeof MotDePasseOublieRoute
   '/onboarding': typeof OnboardingRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/roue': typeof RoueRoute
   '/super-admin': typeof SuperAdminRoute
   '/m/$slug/roue': typeof MSlugRoueRoute
@@ -127,7 +141,9 @@ export interface FileRoutesByTo {
   '/confidentialite': typeof ConfidentialiteRoute
   '/confirmation': typeof ConfirmationRoute
   '/inscription': typeof InscriptionRoute
+  '/mot-de-passe-oublie': typeof MotDePasseOublieRoute
   '/onboarding': typeof OnboardingRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/roue': typeof RoueRoute
   '/super-admin': typeof SuperAdminRoute
   '/m/$slug/roue': typeof MSlugRoueRoute
@@ -145,7 +161,9 @@ export interface FileRoutesById {
   '/confidentialite': typeof ConfidentialiteRoute
   '/confirmation': typeof ConfirmationRoute
   '/inscription': typeof InscriptionRoute
+  '/mot-de-passe-oublie': typeof MotDePasseOublieRoute
   '/onboarding': typeof OnboardingRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/roue': typeof RoueRoute
   '/super-admin': typeof SuperAdminRoute
   '/m/$slug/roue': typeof MSlugRoueRoute
@@ -164,7 +182,9 @@ export interface FileRouteTypes {
     | '/confidentialite'
     | '/confirmation'
     | '/inscription'
+    | '/mot-de-passe-oublie'
     | '/onboarding'
+    | '/reset-password'
     | '/roue'
     | '/super-admin'
     | '/m/$slug/roue'
@@ -181,7 +201,9 @@ export interface FileRouteTypes {
     | '/confidentialite'
     | '/confirmation'
     | '/inscription'
+    | '/mot-de-passe-oublie'
     | '/onboarding'
+    | '/reset-password'
     | '/roue'
     | '/super-admin'
     | '/m/$slug/roue'
@@ -198,7 +220,9 @@ export interface FileRouteTypes {
     | '/confidentialite'
     | '/confirmation'
     | '/inscription'
+    | '/mot-de-passe-oublie'
     | '/onboarding'
+    | '/reset-password'
     | '/roue'
     | '/super-admin'
     | '/m/$slug/roue'
@@ -216,7 +240,9 @@ export interface RootRouteChildren {
   ConfidentialiteRoute: typeof ConfidentialiteRoute
   ConfirmationRoute: typeof ConfirmationRoute
   InscriptionRoute: typeof InscriptionRoute
+  MotDePasseOublieRoute: typeof MotDePasseOublieRoute
   OnboardingRoute: typeof OnboardingRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   RoueRoute: typeof RoueRoute
   SuperAdminRoute: typeof SuperAdminRoute
   MSlugRoueRoute: typeof MSlugRoueRoute
@@ -277,11 +303,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InscriptionRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/mot-de-passe-oublie': {
+      id: '/mot-de-passe-oublie'
+      path: '/mot-de-passe-oublie'
+      fullPath: '/mot-de-passe-oublie'
+      preLoaderRoute: typeof MotDePasseOublieRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/onboarding': {
       id: '/onboarding'
       path: '/onboarding'
       fullPath: '/onboarding'
       preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/roue': {
@@ -344,7 +384,9 @@ const rootRouteChildren: RootRouteChildren = {
   ConfidentialiteRoute: ConfidentialiteRoute,
   ConfirmationRoute: ConfirmationRoute,
   InscriptionRoute: InscriptionRoute,
+  MotDePasseOublieRoute: MotDePasseOublieRoute,
   OnboardingRoute: OnboardingRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   RoueRoute: RoueRoute,
   SuperAdminRoute: SuperAdminRoute,
   MSlugRoueRoute: MSlugRoueRoute,
