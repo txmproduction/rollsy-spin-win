@@ -120,7 +120,7 @@ export function AdminNotifications() {
       </button>
 
       {open && (
-        <div className="ink-border absolute right-0 z-50 mt-2 w-[min(92vw,22rem)] rounded-2xl bg-white p-3 text-left shadow-xl">
+        <div className="ink-border fixed inset-x-2 top-32 z-50 max-h-[70vh] overflow-y-auto rounded-2xl bg-white p-3 text-left shadow-xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-2 sm:max-h-none sm:w-[22rem] sm:overflow-visible">
           {permission !== "granted" && (
             <div className="mb-3 rounded-xl bg-yellow/60 p-3 text-xs">
               {inIframe ? (
