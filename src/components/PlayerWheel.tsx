@@ -37,6 +37,8 @@ export default function PlayerWheel({ merchant }: { merchant: PublicMerchant }) 
   const clientKey = `rollsy_client_id:${merchant.slug}`;
 
   const [ready, setReady] = useState(false);
+  const [hasReviewed, setHasReviewed] = useState(false);
+  const [reviewOpened, setReviewOpened] = useState(false);
   const [name, setName] = useState("");
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
@@ -68,8 +70,20 @@ export default function PlayerWheel({ merchant }: { merchant: PublicMerchant }) 
       }
     }
     if (localStorage.getItem(clientKey)) setContactSaved(true);
+    if (localStorage.getItem(reviewedKey) === "true") setHasReviewed(true);
     setReady(true);
-  }, [navigate, merchant.isDefault, merchant.slug, spunKey, spunAtKey, clientKey]);
+  }, [navigate, merchant.isDefault, merchant.slug, spunKey, spunAtKey, clientKey, reviewedKey]);
+
+  function openReview() {
+    if (typeof window === "undefined") return;
+    setReviewOpened(true);
+    if (merchant.goalUrl) window.open(merchant.goalUrl, "_blank", "noopener,noreferrer");
+  }
+
+  function confirmReview() {
+    if (typeof window !== "undefined") localStorage.setItem(reviewedKey, "true");
+    setHasReviewed(true);
+  }
 
 
   const segments: Segment[] = useMemo(() => {
@@ -189,7 +203,33 @@ export default function PlayerWheel({ merchant }: { merchant: PublicMerchant }) 
         />
       )}
 
-      {!contactSaved && !alreadySpun && (
+      {!hasReviewed && !alreadySpun && (
+        <div className="ink-border-thick w-full max-w-sm rounded-3xl bg-white p-8 text-center shadow-pop-pink">
+          <h1 className="mb-3 font-display text-2xl font-extrabold">Une étape avant de jouer ⭐</h1>
+          <p className="mb-6 text-sm font-bold text-ink/70">
+            Laissez votre avis, puis revenez ici pour tourner la roue.
+          </p>
+          <button
+            onClick={openReview}
+            className="ink-border-thick mb-3 min-h-[52px] w-full rounded-full bg-pink px-6 font-extrabold uppercase text-white shadow-pop-ink"
+          >
+            {merchant.goalLabel} ⭐
+          </button>
+          <button
+            onClick={confirmReview}
+            className="ink-border min-h-[52px] w-full rounded-full bg-yellow px-6 font-extrabold uppercase shadow-pop-ink"
+          >
+            J'ai laissé mon avis → Jouer 🎰
+          </button>
+          {!reviewOpened && (
+            <p className="mt-4 text-xs font-semibold text-ink/50">
+              Déjà fait ? Cliquez simplement sur « J'ai laissé mon avis ».
+            </p>
+          )}
+        </div>
+      )}
+
+      {hasReviewed && !contactSaved && !alreadySpun && (
         <div className="ink-border-thick w-full max-w-sm rounded-3xl bg-white p-8 shadow-pop-pink">
           <h1 className="mb-4 font-display text-2xl font-extrabold">Avant de jouer 🎉</h1>
           <input
@@ -273,7 +313,7 @@ export default function PlayerWheel({ merchant }: { merchant: PublicMerchant }) 
         </div>
       )}
 
-      {contactSaved && (
+      {hasReviewed && contactSaved && (
         <>
           <div className="relative h-72 w-72 sm:h-96 sm:w-96">
             <div
