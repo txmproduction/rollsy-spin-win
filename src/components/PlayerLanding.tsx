@@ -1,6 +1,5 @@
 import { useNavigate, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { useState } from "react";
 import type { PublicMerchant } from "@/lib/player";
 
 const steps = [
@@ -9,24 +8,12 @@ const steps = [
   { icon: "🎰", title: "Tournez la roue", desc: "Et gagnez une récompense immédiate !", color: "bg-green" },
 ];
 
-function requiredActionMessage(goalType: string) {
-  switch (goalType) {
-    case "google":
-      return "Vous devez d'abord laisser un avis pour débloquer la roue ! ⭐";
-    case "instagram":
-      return "Vous devez d'abord vous abonner à l'Instagram pour débloquer la roue ! 📸";
-    case "tiktok":
-      return "Vous devez d'abord vous abonner au TikTok pour débloquer la roue ! 🎵";
-    default:
-      return "Vous devez d'abord faire l'action demandée pour débloquer la roue ! ⭐";
-  }
-}
 
 const shadowMap = ["shadow-pop-pink", "shadow-pop-yellow", "shadow-pop-green"] as const;
 
 export default function PlayerLanding({ merchant }: { merchant: PublicMerchant }) {
   const navigate = useNavigate();
-  const [warning, setWarning] = useState<string | null>(null);
+  
   const reviewedKey = `hasReviewed:${merchant.slug}`;
   const goToWheel = () =>
     merchant.isDefault
@@ -40,13 +27,9 @@ export default function PlayerLanding({ merchant }: { merchant: PublicMerchant }
   };
 
   const handleSpinAccess = () => {
-    if (typeof window === "undefined") return;
-    if (localStorage.getItem(reviewedKey) === "true") {
-      void goToWheel();
-    } else {
-      setWarning(requiredActionMessage(merchant.goalType));
-    }
+    void goToWheel();
   };
+
 
   return (
     <main className="relative min-h-screen overflow-x-hidden">
@@ -148,16 +131,6 @@ export default function PlayerLanding({ merchant }: { merchant: PublicMerchant }
           >
             C'est fait → Roue 🎰
           </motion.button>
-
-          {warning && (
-            <motion.p
-              initial={{ opacity: 0, y: -8, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              className="ink-border rounded-2xl bg-orange px-4 py-3 text-sm font-extrabold text-white shadow-pop-ink"
-            >
-              {warning}
-            </motion.p>
-          )}
         </motion.div>
       </section>
 
