@@ -1,6 +1,5 @@
 import { useNavigate, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { useState } from "react";
 import type { PublicMerchant } from "@/lib/player";
 
 const steps = [
