@@ -313,7 +313,7 @@ export default function PlayerWheel({ merchant }: { merchant: PublicMerchant }) 
         </div>
       )}
 
-      {contactSaved && (
+      {hasReviewed && contactSaved && (
         <>
           <div className="relative h-72 w-72 sm:h-96 sm:w-96">
             <div
