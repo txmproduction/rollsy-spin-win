@@ -57,10 +57,6 @@ export default function PlayerWheel({ merchant }: { merchant: PublicMerchant }) 
       localStorage.removeItem(spunKey);
       localStorage.removeItem(spunAtKey);
     } else {
-      if (localStorage.getItem(reviewedKey) !== "true") {
-        void goHome();
-        return;
-      }
       const spunAt = Number(localStorage.getItem(spunAtKey) || 0);
       if (localStorage.getItem(spunKey) === "true") {
         if (spunAt && Date.now() - spunAt > 24 * 60 * 60 * 1000) {
@@ -73,7 +69,8 @@ export default function PlayerWheel({ merchant }: { merchant: PublicMerchant }) 
     }
     if (localStorage.getItem(clientKey)) setContactSaved(true);
     setReady(true);
-  }, [navigate, merchant.isDefault, merchant.slug, reviewedKey, spunKey, spunAtKey, clientKey]);
+  }, [navigate, merchant.isDefault, merchant.slug, spunKey, spunAtKey, clientKey]);
+
 
   const segments: Segment[] = useMemo(() => {
     const rewardSegments = merchant.rewards.map((r, i) => ({

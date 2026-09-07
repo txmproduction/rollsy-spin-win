@@ -40,13 +40,9 @@ export default function PlayerLanding({ merchant }: { merchant: PublicMerchant }
   };
 
   const handleSpinAccess = () => {
-    if (typeof window === "undefined") return;
-    if (localStorage.getItem(reviewedKey) === "true") {
-      void goToWheel();
-    } else {
-      setWarning(requiredActionMessage(merchant.goalType));
-    }
+    void goToWheel();
   };
+
 
   return (
     <main className="relative min-h-screen overflow-x-hidden">
