@@ -37,6 +37,8 @@ export default function PlayerWheel({ merchant }: { merchant: PublicMerchant }) 
   const clientKey = `rollsy_client_id:${merchant.slug}`;
 
   const [ready, setReady] = useState(false);
+  const [hasReviewed, setHasReviewed] = useState(false);
+  const [reviewOpened, setReviewOpened] = useState(false);
   const [name, setName] = useState("");
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
@@ -68,8 +70,20 @@ export default function PlayerWheel({ merchant }: { merchant: PublicMerchant }) 
       }
     }
     if (localStorage.getItem(clientKey)) setContactSaved(true);
+    if (localStorage.getItem(reviewedKey) === "true") setHasReviewed(true);
     setReady(true);
-  }, [navigate, merchant.isDefault, merchant.slug, spunKey, spunAtKey, clientKey]);
+  }, [navigate, merchant.isDefault, merchant.slug, spunKey, spunAtKey, clientKey, reviewedKey]);
+
+  function openReview() {
+    if (typeof window === "undefined") return;
+    setReviewOpened(true);
+    if (merchant.goalUrl) window.open(merchant.goalUrl, "_blank", "noopener,noreferrer");
+  }
+
+  function confirmReview() {
+    if (typeof window !== "undefined") localStorage.setItem(reviewedKey, "true");
+    setHasReviewed(true);
+  }
 
 
   const segments: Segment[] = useMemo(() => {
