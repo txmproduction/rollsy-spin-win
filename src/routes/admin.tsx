@@ -16,49 +16,15 @@ import {
 
 type RewardRow = { name: string; quota: number; winPercent: number };
 
-// Répartit `remaining` sur les lots d'index != keepIndex, proportionnellement
-// à leurs valeurs actuelles, en garantissant un total exact de 100.
-function distribute(rows: RewardRow[], keepIndex: number, keptValue: number): RewardRow[] {
-  const others = rows.map((_, i) => i).filter((i) => i !== keepIndex);
-  if (others.length === 0) {
-    return rows.map((r, i) => (i === keepIndex ? { ...r, winPercent: 100 } : r));
-  }
-  const remaining = Math.max(0, 100 - keptValue);
-  const base = others.map((i) => Math.max(0, Number(rows[i]!.winPercent) || 0));
-  const sum = base.reduce((a, b) => a + b, 0);
-  const raw = others.map((_, k) => (sum > 0 ? (base[k]! / sum) * remaining : remaining / others.length));
-  const floored = raw.map((v) => Math.floor(v));
-  let rest = remaining - floored.reduce((a, b) => a + b, 0);
-  const order = raw
-    .map((v, k) => ({ k, frac: v - Math.floor(v) }))
-    .sort((a, b) => b.frac - a.frac);
-  for (const o of order) {
-    if (rest <= 0) break;
-    floored[o.k] = floored[o.k]! + 1;
-    rest -= 1;
-  }
-  const next = rows.map((r) => ({ ...r }));
-  next[keepIndex]!.winPercent = Math.min(100, Math.max(0, keptValue));
-  others.forEach((idx, k) => {
-    next[idx]!.winPercent = floored[k]!;
-  });
-  return next;
-}
-
-// Ramène toujours le total à 100% (répartition égale si aucune valeur définie).
-function normalizePercents(rows: RewardRow[]): RewardRow[] {
+// Répartit 100% en parts égales arrondies à la dizaine entre tous les lots.
+function evenSplit(rows: RewardRow[]): RewardRow[] {
   if (rows.length === 0) return rows;
-  const total = rows.reduce((a, r) => a + (Number(r.winPercent) || 0), 0);
-  if (total === 100) return rows;
-  if (total <= 0) {
-    const even = Math.floor(100 / rows.length);
-    const next = rows.map((r) => ({ ...r, winPercent: even }));
-    let rest = 100 - even * rows.length;
-    for (let i = 0; rest > 0; i++, rest--) next[i % next.length]!.winPercent += 1;
-    return next;
-  }
-  const scaled = Math.round((Number(rows[0]!.winPercent) || 0) * (100 / total));
-  return distribute(rows, 0, Math.min(100, Math.max(0, scaled)));
+  const base = Math.floor(100 / rows.length / 10) * 10;
+  let rest = (100 - base * rows.length) / 10;
+  return rows.map((r, i) => {
+    const extra = i < rest ? 10 : 0;
+    return { ...r, winPercent: base + extra };
+  });
 }
 
 
