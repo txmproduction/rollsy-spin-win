@@ -366,6 +366,15 @@ export async function saveMerchantSetup(userId: string, input: z.infer<typeof se
   const m = await requireMerchant(userId);
   const db = await admin();
 
+  const alwaysWin =
+    input.alwaysWin ?? ((m as { always_win?: boolean }).always_win === true);
+  if (alwaysWin) {
+    const total = input.rewards.reduce((a, r) => a + (r.winPercent ?? 0), 0);
+    if (total !== 100) {
+      throw new Error(`Le total des pourcentages doit être égal à 100% (actuellement ${total}%).`);
+    }
+  }
+
   const { error: upErr } = await db
     .from("merchants")
     .update({
@@ -374,6 +383,7 @@ export async function saveMerchantSetup(userId: string, input: z.infer<typeof se
       ...(input.rewardMode ? { reward_mode: input.rewardMode } : {}),
       ...(input.logoPath !== undefined ? { logo_path: input.logoPath } : {}),
       ...(input.completeOnboarding ? { onboarding_completed: true } : {}),
+      ...(input.alwaysWin !== undefined ? { always_win: input.alwaysWin } : {}),
     })
     .eq("id", m.id);
   if (upErr) {
@@ -393,6 +403,7 @@ export async function saveMerchantSetup(userId: string, input: z.infer<typeof se
     short_label: r.name.slice(0, 14),
     frequency: input.frequency,
     quota: r.quota,
+    win_percent: r.winPercent ?? 0,
     active: true,
   }));
   const { error: insErr } = await db.from("rewards").insert(rows);
