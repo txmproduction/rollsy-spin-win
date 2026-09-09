@@ -221,7 +221,9 @@ function AdminPage() {
   const [goalUrl, setGoalUrl] = useState("");
   const [frequency, setFrequency] = useState<"day" | "week">("week");
   const [rewardMode, setRewardMode] = useState<"immediate" | "next_visit">("immediate");
-  const [rewardRows, setRewardRows] = useState<{ name: string; quota: number }[]>([]);
+  const [rewardRows, setRewardRows] = useState<
+    { name: string; quota: number; winPercent: number }[]
+  >([]);
   const [savedMsg, setSavedMsg] = useState<string | null>(null);
   const [logoPath, setLogoPath] = useState<string | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
