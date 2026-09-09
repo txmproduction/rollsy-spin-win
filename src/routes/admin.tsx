@@ -689,8 +689,8 @@ function AdminPage() {
 
       <Card title={'Mode "100% gagnant"'}>
         <p className="mb-3 font-bold text-ink/80">
-          Activez cette option pour que chaque participant reparte systématiquement avec un lot
-          (tant qu'il reste des lots disponibles selon vos quotas).
+          Activez cette option pour que chaque participant reparte systématiquement avec un lot.
+          Les quotas sont alors remplacés par un pourcentage de chance par lot (total = 100%).
         </p>
         <div className="ink-border mb-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white px-4 py-3">
           <div className="flex items-center gap-3">
@@ -720,8 +720,8 @@ function AdminPage() {
           </button>
         </div>
         <p className="ink-border rounded-2xl bg-orange/15 px-4 py-3 text-sm font-bold">
-          ⚠️ Attention : cela augmente fortement le nombre de récompenses distribuées. Vos quotas
-          par lot (par jour ou par semaine) restent toujours respectés.
+          ⚠️ Attention : cela augmente fortement le nombre de récompenses distribuées. Aucune
+          limite par jour ou par semaine ne s'applique dans ce mode : chaque joueur gagne.
         </p>
         {alwaysWinMsg && <p className="mt-3 text-sm font-extrabold">{alwaysWinMsg}</p>}
       </Card>
