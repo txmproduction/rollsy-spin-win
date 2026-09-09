@@ -1,0 +1,2 @@
+DELETE FROM public.spins WHERE id = '735b9af6-53c0-48a4-8ff9-519903c7237a';
+DELETE FROM public.clients WHERE name = 'Test QA' AND phone = '0612345678' AND merchant_id = '0f3866b1-3761-4b7a-a984-e5a29464fabe';
