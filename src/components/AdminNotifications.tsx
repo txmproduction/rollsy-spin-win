@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { fetchAdminNotifications, readAdminNotifications } from "@/lib/rollsy.functions";
+import {
+  fetchAdminNotifications,
+  readAdminNotifications,
+  fetchPushPublicKey,
+  registerPushDevice,
+  testPushNotification,
+} from "@/lib/rollsy.functions";
 
 type Notif = {
   id: string;
@@ -12,6 +18,15 @@ type Notif = {
 };
 
 const POLL_MS = 30_000;
+
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = atob(base64);
+  const output = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) output[i] = raw.charCodeAt(i);
+  return output;
+}
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString("fr-FR", {
@@ -25,6 +40,10 @@ function formatDate(iso: string) {
 export function AdminNotifications() {
   const load = useServerFn(fetchAdminNotifications);
   const markRead = useServerFn(readAdminNotifications);
+  const getKey = useServerFn(fetchPushPublicKey);
+  const registerDevice = useServerFn(registerPushDevice);
+  const sendTest = useServerFn(testPushNotification);
+  const [pushState, setPushState] = useState<"idle" | "working" | "ready" | "error">("idle");
   const [items, setItems] = useState<Notif[]>([]);
   const [open, setOpen] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission | "unsupported">(
@@ -77,20 +96,58 @@ export function AdminNotifications() {
 
   const unread = items.filter((n) => !n.readAt).length;
 
+  const enablePush = useCallback(async () => {
+    setPushState("working");
+    try {
+      if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+        setPushState("error");
+        return;
+      }
+      const { publicKey } = (await getKey()) as { publicKey: string | null };
+      if (!publicKey) {
+        setPushState("error");
+        return;
+      }
+      const reg = await navigator.serviceWorker.register("/sw.js");
+      await navigator.serviceWorker.ready;
+      const existing = await reg.pushManager.getSubscription();
+      const sub =
+        existing ??
+        (await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(publicKey) as BufferSource,
+        }));
+      const json = sub.toJSON() as { endpoint?: string; keys?: { p256dh?: string; auth?: string } };
+      if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) {
+        setPushState("error");
+        return;
+      }
+      await registerDevice({
+        data: { endpoint: json.endpoint, p256dh: json.keys.p256dh, auth: json.keys.auth },
+      });
+      setPushState("ready");
+    } catch (e) {
+      console.error(e);
+      setPushState("error");
+    }
+  }, [getKey, registerDevice]);
+
+  useEffect(() => {
+    if (
+      permission === "granted" &&
+      typeof window !== "undefined" &&
+      window.top === window.self &&
+      pushState === "idle"
+    ) {
+      void enablePush();
+    }
+  }, [permission, pushState, enablePush]);
+
   async function askPermission() {
     if (typeof window === "undefined" || !("Notification" in window)) return;
     const p = await Notification.requestPermission();
     setPermission(p);
-    if (p === "granted") {
-      try {
-        new Notification("Notifications activées", {
-          body: "Vous serez prévenu à chaque nouveau commerçant ou nouvelle roue.",
-          icon: "/icon-192.png",
-        });
-      } catch {
-        /* ignore */
-      }
-    }
+    if (p === "granted") await enablePush();
   }
 
   async function toggle() {
@@ -147,6 +204,36 @@ export function AdminNotifications() {
                   </button>
                 </>
               )}
+            </div>
+          )}
+
+          {permission === "granted" && (
+            <div className="mb-3 rounded-xl border border-ink/15 p-2 text-xs">
+              <p className="mb-2 font-extrabold">
+                {pushState === "ready"
+                  ? "Alertes activées sur cet appareil"
+                  : pushState === "working"
+                    ? "Activation en cours..."
+                    : pushState === "error"
+                      ? "Activation impossible sur cet appareil"
+                      : "Alertes du téléphone"}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => void enablePush()}
+                  className="ink-border rounded-full bg-white px-3 py-1 font-extrabold"
+                >
+                  Activer sur cet appareil
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void sendTest({})}
+                  className="ink-border rounded-full bg-yellow px-3 py-1 font-extrabold"
+                >
+                  Tester
+                </button>
+              </div>
             </div>
           )}
 
