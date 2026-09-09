@@ -344,9 +344,10 @@ function AdminPage() {
   );
 
   async function saveConfig() {
-
     setBusy(true);
     setSavedMsg(null);
+    const rowsToSave = alwaysWin ? normalizePercents(rewardRows) : rewardRows;
+    if (alwaysWin) setRewardRows(rowsToSave);
     try {
       await saveWheelSetup({
         data: {
@@ -354,11 +355,12 @@ function AdminPage() {
           goalUrl: goalUrl.trim(),
           frequency,
           rewardMode,
-          rewards: rewardRows.map((r) => ({
+          rewards: rowsToSave.map((r) => ({
             name: r.name.trim(),
             quota: Number(r.quota) || 1,
             winPercent: Math.max(0, Math.min(100, Math.round(Number(r.winPercent) || 0))),
           })),
+
           alwaysWin,
           ...(logoPath ? { logoPath } : {}),
           completeOnboarding: true,
