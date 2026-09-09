@@ -324,14 +324,14 @@ function AdminPage() {
     setGoalUrl(data.merchant.goal_url ?? "");
     setFrequency((data.rewards[0]?.frequency as "day" | "week") ?? "week");
     setRewardMode(data.merchant.reward_mode === "next_visit" ? "next_visit" : "immediate");
-    setRewardRows(
-      data.rewards.map((r) => ({
-        name: r.name,
-        quota: r.quota,
-        winPercent: Number((r as { win_percent?: number | null }).win_percent ?? 0),
-      })),
-    );
-    setAlwaysWin(data.merchant.always_win === true);
+    const rows: RewardRow[] = data.rewards.map((r) => ({
+      name: r.name,
+      quota: r.quota,
+      winPercent: Number((r as { win_percent?: number | null }).win_percent ?? 0),
+    }));
+    const aw = data.merchant.always_win === true;
+    setRewardRows(aw ? normalizePercents(rows) : rows);
+    setAlwaysWin(aw);
     setLogoPath(null);
     setLogoPreview(data.logoUrl ?? null);
   }, [data]);
@@ -340,13 +340,9 @@ function AdminPage() {
     () => rewardRows.reduce((a, r) => a + (Number(r.winPercent) || 0), 0),
     [rewardRows],
   );
-  const percentOk = percentTotal === 100;
 
   async function saveConfig() {
-    if (alwaysWin && !percentOk) {
-      setSavedMsg("Le total des pourcentages doit être exactement 100%.");
-      return;
-    }
+
     setBusy(true);
     setSavedMsg(null);
     try {
