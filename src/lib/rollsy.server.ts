@@ -444,7 +444,7 @@ export async function loadMerchantAdminData(userId: string) {
       .order("created_at", { ascending: false }),
     db
       .from("rewards")
-      .select("id, name, short_label, frequency, quota")
+      .select("id, name, short_label, frequency, quota, win_percent")
       .eq("merchant_id", m.id)
       .order("created_at", { ascending: true }),
     db
