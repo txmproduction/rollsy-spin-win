@@ -67,6 +67,39 @@ function emojiFor(text: string, index: number): string {
   return FALLBACK_EMOJIS[index % FALLBACK_EMOJIS.length]!;
 }
 
+function polarPoint(angle: number, radius: number) {
+  const radians = ((angle - 90) * Math.PI) / 180;
+  return {
+    x: 200 + radius * Math.cos(radians),
+    y: 200 + radius * Math.sin(radians),
+  };
+}
+
+function segmentPath(startAngle: number, endAngle: number) {
+  const start = polarPoint(startAngle, 184);
+  const end = polarPoint(endAngle, 184);
+  const largeArc = endAngle - startAngle > 180 ? 1 : 0;
+  return `M 200 200 L ${start.x} ${start.y} A 184 184 0 ${largeArc} 1 ${end.x} ${end.y} Z`;
+}
+
+function wrapSegmentLabel(label: string, segmentAngle: number): string[] {
+  const words = label.trim().split(/\s+/).filter(Boolean);
+  const maxCharacters = segmentAngle <= 36 ? 10 : segmentAngle <= 52 ? 12 : 15;
+  const lines: string[] = [];
+
+  for (const word of words) {
+    const current = lines[lines.length - 1];
+    if (!current || current.length + word.length + 1 > maxCharacters) {
+      lines.push(word);
+    } else {
+      lines[lines.length - 1] = `${current} ${word}`;
+    }
+  }
+
+  if (lines.length <= 3) return lines;
+  return [lines[0] ?? "", lines[1] ?? "", lines.slice(2).join(" ")];
+}
+
 function fireConfetti() {
   const burst = (opts: confetti.Options) =>
     confetti({ particleCount: 90, spread: 75, colors: COLORS, ...opts });
@@ -155,19 +188,7 @@ export default function PlayerWheel({ merchant }: { merchant: PublicMerchant }) 
 
   const segAngle = 360 / (segments.length || 1);
 
-  // Largeur de texte disponible dans un segment (corde du cercle au rayon du libellé).
-  const labelWidth = useMemo(() => {
-    const segRad = (segAngle * Math.PI) / 180;
-    return Math.max(54, Math.min(110, Math.round(2 * 78 * Math.sin(segRad / 2))));
-  }, [segAngle]);
-  const labelFontSize = segAngle <= 36 ? 10 : segAngle <= 51.5 ? 11 : 12;
-
-  const conicGradient = useMemo(() => {
-    const stops = segments
-      .map((s, i) => `${s.color} ${i * segAngle}deg ${(i + 1) * segAngle}deg`)
-      .join(", ");
-    return `conic-gradient(${stops})`;
-  }, [segments, segAngle]);
+  const displayedRotation = ((rotation % 360) + 360) % 360;
 
   const phoneDigits = phone.replace(/\D/g, "");
   const phoneValid = phoneDigits.length >= 9 && phoneDigits.length <= 15;
@@ -378,67 +399,98 @@ export default function PlayerWheel({ merchant }: { merchant: PublicMerchant }) 
 
       {hasReviewed && contactSaved && (
         <>
-          <div className="relative h-72 w-72 sm:h-96 sm:w-96">
-            <div
-              className="absolute left-1/2 top-[-14px] z-10 -translate-x-1/2"
-              style={{
-                width: 0,
-                height: 0,
-                borderLeft: "16px solid transparent",
-                borderRight: "16px solid transparent",
-                borderTop: "26px solid #1a1a1a",
-                filter: "drop-shadow(0 2px 0 rgba(0,0,0,0.2))",
-              }}
-            />
-            <div
-              className="ink-border-thick relative h-72 w-72 rounded-full sm:h-96 sm:w-96"
-              style={{
-                background: conicGradient,
-                transform: `rotate(${rotation}deg)`,
-                transition: "transform 4s cubic-bezier(0.17,0.67,0.16,0.99)",
-              }}
+          <div className="wheel-shell relative h-72 w-72 sm:h-96 sm:w-96">
+            <div className="wheel-pointer absolute left-1/2 top-[-10px] z-30 -translate-x-1/2" aria-hidden />
+            <svg
+              viewBox="0 0 400 400"
+              className="relative z-10 h-full w-full overflow-visible"
+              role="img"
+              aria-label={`Roue de ${merchant.companyName}`}
             >
-              {/* Séparateurs entre les parts */}
-              {segments.map((_, i) => (
-                <div
-                  key={`sep-${i}`}
-                  className="pointer-events-none absolute left-1/2 top-0 h-1/2 w-[4px] -translate-x-1/2 rounded-full bg-[#1a1a1a]"
-                  style={{ transformOrigin: "50% 100%", transform: `rotate(${i * segAngle}deg)` }}
-                />
-              ))}
+              <defs>
+                <filter id="wheel-module-shadow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="3" stdDeviation="3" floodColor="var(--wheel-shadow)" />
+                </filter>
+                <radialGradient id="wheel-gloss" cx="42%" cy="34%" r="72%">
+                  <stop offset="0%" stopColor="var(--wheel-highlight)" />
+                  <stop offset="58%" stopColor="var(--wheel-highlight-clear)" />
+                  <stop offset="100%" stopColor="var(--wheel-shade)" />
+                </radialGradient>
+              </defs>
 
-              {/* Libellés, toujours lisibles à l'endroit */}
-              {segments.map((s, i) => {
-                const a = i * segAngle + segAngle / 2;
-                return (
-                  <div
-                    key={i}
-                    className="pointer-events-none absolute left-0 top-0 h-1/2 w-full"
-                    style={{ transformOrigin: "50% 100%", transform: `rotate(${a}deg)` }}
-                  >
-                    <div
-                      className="absolute left-1/2 top-[14%] flex -translate-x-1/2 flex-col items-center gap-0.5 text-center font-extrabold leading-tight"
-                      style={{
-                        width: labelWidth,
-                        fontSize: labelFontSize,
-                        transform: `translateX(-50%) rotate(${-a}deg)`,
-                        overflowWrap: "break-word",
-                        textShadow: "0 1px 0 rgba(255,255,255,0.35)",
-                      }}
-                    >
-                      <span aria-hidden>{s.emoji}</span>
-                      <span>{s.short}</span>
-                    </div>
-                  </div>
-                );
-              })}
+              <g
+                className="wheel-rotor"
+                style={{ transform: `rotate(${rotation}deg)`, transformOrigin: "200px 200px" }}
+              >
+                {segments.map((segment, index) => {
+                  const inset = Math.min(1.3, segAngle * 0.04);
+                  return (
+                    <g key={segment.rewardId ?? "lose"} filter="url(#wheel-module-shadow)">
+                      <path
+                        d={segmentPath(index * segAngle + inset, (index + 1) * segAngle - inset)}
+                        fill={segment.color}
+                        stroke="var(--wheel-separator)"
+                        strokeWidth="3.5"
+                        strokeLinejoin="round"
+                      />
+                      <path
+                        d={segmentPath(index * segAngle + inset, (index + 1) * segAngle - inset)}
+                        fill="url(#wheel-gloss)"
+                        className="pointer-events-none"
+                      />
+                    </g>
+                  );
+                })}
+                <circle cx="200" cy="200" r="184" fill="none" stroke="var(--wheel-rim)" strokeWidth="9" />
+              </g>
 
-              {/* Ombre interne pour un rendu plus premium */}
-              <div
-                className="pointer-events-none absolute inset-0 rounded-full"
-                style={{ boxShadow: "inset 0 0 26px rgba(0,0,0,0.25)" }}
-              />
-            </div>
+              <g className={`wheel-labels ${spinning ? "wheel-labels-spinning" : ""}`}>
+                {segments.map((segment, index) => {
+                  const angle = index * segAngle + segAngle / 2 + displayedRotation;
+                  const point = polarPoint(angle, segments.length >= 9 ? 132 : 128);
+                  const lines = wrapSegmentLabel(segment.short, segAngle);
+                  const longest = Math.max(...lines.map((line) => line.length));
+                  const fontSize = longest > 15 || segments.length >= 10 ? 10 : longest > 11 ? 11 : 12;
+                  const lineHeight = fontSize + 1.5;
+                  const textTop = point.y + 8 - ((lines.length - 1) * lineHeight) / 2;
+                  return (
+                    <g key={`label-${segment.rewardId ?? "lose"}`} transform={`translate(${point.x} ${point.y})`}>
+                      <text
+                        x="0"
+                        y={-13}
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                        className="wheel-emoji"
+                        aria-hidden
+                      >
+                        {segment.emoji}
+                      </text>
+                      <text
+                        x="0"
+                        y={textTop - point.y}
+                        textAnchor="middle"
+                        className="wheel-label"
+                        style={{ fontSize }}
+                      >
+                        {lines.map((line, lineIndex) => (
+                          <tspan key={`${line}-${lineIndex}`} x="0" dy={lineIndex === 0 ? 0 : lineHeight}>
+                            {line}
+                          </tspan>
+                        ))}
+                      </text>
+                    </g>
+                  );
+                })}
+              </g>
+
+              <g className="wheel-hub" aria-hidden>
+                <circle cx="200" cy="200" r="49" fill="var(--wheel-hub-ring)" />
+                <circle cx="200" cy="200" r="40" fill="var(--wheel-hub)" />
+                <circle cx="200" cy="200" r="33" fill="none" stroke="var(--wheel-hub-detail)" strokeWidth="1.5" />
+                <text x="200" y="197" textAnchor="middle" className="wheel-hub-title">ROLLSY</text>
+                <text x="200" y="213" textAnchor="middle" className="wheel-hub-subtitle">BONNE CHANCE</text>
+              </g>
+            </svg>
           </div>
 
           {!alreadySpun && (
