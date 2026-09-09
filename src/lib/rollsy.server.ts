@@ -53,6 +53,10 @@ export const setupSchema = z.object({
   completeOnboarding: z.boolean().optional(),
 });
 
+export const alwaysWinSchema = z.object({
+  alwaysWin: z.boolean(),
+});
+
 export const codeSchema = z.object({
   spinId: z.string().uuid(),
   used: z.boolean(),
@@ -273,7 +277,7 @@ export async function findMerchantByOwner(userId: string) {
   const { data } = await db
     .from("merchants")
     .select(
-      "id, slug, company_name, first_name, last_name, phone, email, goal_type, goal_url, reward_mode, logo_path, status, access_status, onboarding_completed, trial_ends_at",
+      "id, slug, company_name, first_name, last_name, phone, email, goal_type, goal_url, reward_mode, always_win, logo_path, status, access_status, onboarding_completed, trial_ends_at",
     )
     .eq("owner_id", userId)
     .maybeSingle();
@@ -316,7 +320,7 @@ export async function ensureMerchantForUser(
       trial_ends_at: trialEnds.toISOString(),
     })
     .select(
-      "id, slug, company_name, first_name, last_name, phone, email, goal_type, goal_url, reward_mode, logo_path, status, access_status, onboarding_completed, trial_ends_at",
+      "id, slug, company_name, first_name, last_name, phone, email, goal_type, goal_url, reward_mode, always_win, logo_path, status, access_status, onboarding_completed, trial_ends_at",
     )
     .single();
   if (error || !data) {
@@ -385,6 +389,17 @@ export async function saveMerchantSetup(userId: string, input: z.infer<typeof se
     );
   }
   return { ok: true as const, slug: m.slug as string };
+}
+
+export async function setMerchantAlwaysWin(userId: string, alwaysWin: boolean) {
+  const m = await requireMerchant(userId);
+  const db = await admin();
+  const { error } = await db.from("merchants").update({ always_win: alwaysWin }).eq("id", m.id);
+  if (error) {
+    console.error("[rollsy] always_win update failed", error);
+    throw new Error("Échec de la mise à jour du mode 100% gagnant.");
+  }
+  return { ok: true as const, alwaysWin };
 }
 
 export async function loadMerchantAdminData(userId: string) {
