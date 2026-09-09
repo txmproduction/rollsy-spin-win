@@ -617,8 +617,8 @@ function AdminPage() {
         </div>
         {alwaysWin ? (
           <p className="ink-border mb-4 rounded-2xl bg-mint/40 px-4 py-3 text-sm font-bold">
-            Mode 100% gagnant actif : les quotas ne sont plus utilisés. Réglez le pourcentage de
-            chance de chaque lot ; le total doit faire exactement 100%.
+            Mode 100% gagnant actif : les quotas ne sont plus utilisés. Réglez la chance de chaque
+            lot — les autres s'ajustent automatiquement, le total reste toujours à 100%.
           </p>
         ) : (
           <p className="ink-border mb-4 rounded-2xl bg-orange/15 px-4 py-3 text-sm font-bold">
@@ -638,23 +638,9 @@ function AdminPage() {
                 className="ink-border min-h-[52px] flex-1 rounded-full bg-yellow/30 px-5 font-bold outline-none"
               />
               {alwaysWin ? (
-                <input
-                  type="number"
-                  min={0}
-                  max={100}
-                  value={r.winPercent}
-                  aria-label="% de chance"
-                  onChange={(e) =>
-                    setRewardRows((prev) =>
-                      prev.map((x, j) =>
-                        j === i
-                          ? { ...x, winPercent: Math.max(0, Math.min(100, Number(e.target.value) || 0)) }
-                          : x,
-                      ),
-                    )
-                  }
-                  className="ink-border min-h-[52px] w-20 rounded-full bg-white px-3 text-center font-bold outline-none"
-                />
+                <span className="ink-border flex min-h-[52px] w-20 items-center justify-center rounded-full bg-white font-extrabold">
+                  {r.winPercent}%
+                </span>
               ) : (
                 <input
                   type="number"
@@ -670,7 +656,12 @@ function AdminPage() {
                 />
               )}
               <button
-                onClick={() => setRewardRows((prev) => prev.filter((_, j) => j !== i))}
+                onClick={() =>
+                  setRewardRows((prev) => {
+                    const kept = prev.filter((_, j) => j !== i);
+                    return alwaysWin ? normalizePercents(kept) : kept;
+                  })
+                }
                 className="ink-border min-h-[52px] rounded-full bg-white px-4 font-extrabold"
                 aria-label="Supprimer la récompense"
               >
@@ -687,9 +678,7 @@ function AdminPage() {
                   value={r.winPercent}
                   aria-label={`% de chance ${r.name || `lot ${i + 1}`}`}
                   onChange={(e) =>
-                    setRewardRows((prev) =>
-                      prev.map((x, j) => (j === i ? { ...x, winPercent: Number(e.target.value) } : x)),
-                    )
+                    setRewardRows((prev) => distribute(prev, i, Number(e.target.value)))
                   }
                   className="w-full accent-[var(--color-green)]"
                 />
@@ -701,21 +690,20 @@ function AdminPage() {
         {alwaysWin && (
           <p
             role="status"
-            className={`ink-border mb-4 rounded-2xl px-4 py-3 text-sm font-extrabold ${
-              percentOk ? "bg-green/20" : "bg-orange/30"
-            }`}
+            className="ink-border mb-4 rounded-2xl bg-green/20 px-4 py-3 text-sm font-extrabold"
           >
-            {percentOk
-              ? "Total : 100% ✅"
-              : percentTotal < 100
-                ? `Total : ${percentTotal}% ⚠️ — il manque ${100 - percentTotal}%`
-                : `Total : ${percentTotal}% ⚠️ — ${percentTotal - 100}% en trop`}
+            Total : {percentTotal}% ✅ — répartition automatique
           </p>
         )}
         <div className="flex flex-wrap gap-3">
           <button
             onClick={() =>
-              setRewardRows((prev) => [...prev, { name: "", quota: 1, winPercent: 0 }])
+              setRewardRows((prev) => {
+                const next = [...prev, { name: "", quota: 1, winPercent: 0 }];
+                if (!alwaysWin) return next;
+                const even = Math.floor(100 / next.length);
+                return distribute(next, next.length - 1, even);
+              })
             }
             disabled={rewardRows.length >= 8}
             className="ink-border min-h-[52px] rounded-full bg-white px-5 font-extrabold uppercase disabled:opacity-40"
@@ -724,12 +712,13 @@ function AdminPage() {
           </button>
           <button
             onClick={saveConfig}
-            disabled={busy || rewardRows.length < 2 || (alwaysWin && !percentOk)}
+            disabled={busy || rewardRows.length < 2}
             className="ink-border-thick min-h-[52px] rounded-full bg-pink px-6 font-extrabold uppercase text-white shadow-pop-ink disabled:opacity-50"
           >
             Enregistrer
           </button>
         </div>
+
         {savedMsg && <p className="mt-3 text-sm font-extrabold">{savedMsg}</p>}
       </Card>
 
