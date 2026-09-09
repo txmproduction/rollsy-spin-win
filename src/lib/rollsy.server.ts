@@ -212,41 +212,57 @@ export async function decideAndRecordSpin(slug: string, clientId: string | null)
 
   const { data: rewards } = await db
     .from("rewards")
-    .select("id, name, frequency, quota")
+    .select("id, name, frequency, quota, win_percent")
     .eq("merchant_id", merchantId)
     .eq("active", true);
 
-  let lastWasWin = false;
-  if (!alwaysWin) {
+  let wonId: string | null = null;
+
+  if (alwaysWin) {
+    // Mode 100% gagnant : tirage pondéré par pourcentage, sans quota ni LOSE_WEIGHT,
+    // sans règle anti-deux-gains. Le joueur gagne toujours un lot.
+    const list = (rewards ?? []) as { id: string; win_percent: number | null }[];
+    if (list.length > 0) {
+      const weights = list.map((r) => Math.max(0, Number(r.win_percent ?? 0)));
+      const total = weights.reduce((a, b) => a + b, 0);
+      // Si aucun pourcentage configuré, répartition uniforme.
+      const w = total > 0 ? weights : list.map(() => 1);
+      const sum = total > 0 ? total : list.length;
+      let roll = Math.random() * sum;
+      for (let i = 0; i < list.length; i++) {
+        roll -= w[i]!;
+        if (roll < 0) {
+          wonId = list[i]!.id;
+          break;
+        }
+      }
+      if (!wonId) wonId = list[list.length - 1]!.id;
+    }
+  } else {
     const { data: last } = await db
       .from("spins")
       .select("result")
       .eq("merchant_id", merchantId)
       .order("created_at", { ascending: false })
       .limit(1);
-    lastWasWin = last?.[0]?.result === "win";
-  }
+    const lastWasWin = last?.[0]?.result === "win";
 
-  const eligible: { id: string }[] = [];
-  if (!lastWasWin) {
-    for (const r of rewards ?? []) {
-      const periodStart = r.frequency === "week" ? startOfWeek() : startOfDay();
-      const { count } = await db
-        .from("spins")
-        .select("id", { count: "exact", head: true })
-        .eq("merchant_id", merchantId)
-        .eq("reward_id", r.id)
-        .eq("result", "win")
-        .gte("created_at", periodStart.toISOString());
-      if ((count ?? 0) < r.quota) eligible.push({ id: r.id });
+    const eligible: { id: string }[] = [];
+    if (!lastWasWin) {
+      for (const r of rewards ?? []) {
+        const periodStart = r.frequency === "week" ? startOfWeek() : startOfDay();
+        const { count } = await db
+          .from("spins")
+          .select("id", { count: "exact", head: true })
+          .eq("merchant_id", merchantId)
+          .eq("reward_id", r.id)
+          .eq("result", "win")
+          .gte("created_at", periodStart.toISOString());
+        if ((count ?? 0) < r.quota) eligible.push({ id: r.id });
+      }
     }
-  }
 
-  let wonId: string | null = null;
-  if (eligible.length > 0) {
-    if (alwaysWin) {
-      wonId = eligible[Math.floor(Math.random() * eligible.length)]!.id;
-    } else {
+    if (eligible.length > 0) {
       let roll = Math.random() * (eligible.length + LOSE_WEIGHT);
       for (const rew of eligible) {
         roll -= 1;
@@ -257,6 +273,8 @@ export async function decideAndRecordSpin(slug: string, clientId: string | null)
       }
     }
   }
+
+
 
 
   const code = wonId && rewardMode === "next_visit" ? generateCode() : null;
