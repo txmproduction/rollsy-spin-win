@@ -671,6 +671,12 @@ export async function recordAdminEvent(
   } catch (e) {
     console.error("[rollsy] admin notification failed", e);
   }
+  try {
+    await broadcastPush(title, body);
+  } catch (e) {
+    console.error("[rollsy] admin push failed", e);
+  }
+
 }
 
 export async function listAdminNotifications(userId: string): Promise<AdminNotification[]> {
