@@ -201,6 +201,7 @@ export type Database = {
           quota_afternoon: number | null
           quota_morning: number | null
           short_label: string | null
+          win_percent: number
         }
         Insert: {
           active?: boolean
@@ -213,6 +214,7 @@ export type Database = {
           quota_afternoon?: number | null
           quota_morning?: number | null
           short_label?: string | null
+          win_percent?: number
         }
         Update: {
           active?: boolean
@@ -225,6 +227,7 @@ export type Database = {
           quota_afternoon?: number | null
           quota_morning?: number | null
           short_label?: string | null
+          win_percent?: number
         }
         Relationships: [
           {

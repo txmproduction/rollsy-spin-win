@@ -1,0 +1,1 @@
+ALTER TABLE public.rewards ADD COLUMN IF NOT EXISTS win_percent integer NOT NULL DEFAULT 0 CHECK (win_percent >= 0 AND win_percent <= 100);
