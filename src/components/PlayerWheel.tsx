@@ -345,10 +345,21 @@ export default function PlayerWheel({ merchant }: { merchant: PublicMerchant }) 
               {segments.map((s, i) => (
                 <div
                   key={i}
-                  className="absolute left-1/2 top-1/2 origin-left whitespace-nowrap text-sm font-extrabold"
-                  style={{ transform: `rotate(${i * segAngle + segAngle / 2 - 90}deg) translateX(48px)` }}
+                  className="absolute left-1/2 top-1/2 origin-left"
+                  style={{ transform: `rotate(${i * segAngle + segAngle / 2 - 90}deg) translateX(40px)` }}
                 >
-                  {s.emoji} {s.short}
+                  <div
+                    className="flex -translate-y-1/2 flex-col items-center gap-0.5 text-center font-extrabold leading-tight"
+                    style={{
+                      width: labelWidth,
+                      fontSize: labelFontSize,
+                      overflowWrap: "break-word",
+                      textShadow: "0 1px 0 rgba(255,255,255,0.35)",
+                    }}
+                  >
+                    <span aria-hidden>{s.emoji}</span>
+                    <span>{s.short}</span>
+                  </div>
                 </div>
               ))}
             </div>
