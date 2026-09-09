@@ -459,8 +459,11 @@ function AdminPage() {
               >
                 <span className="font-extrabold">{r.name}</span>
                 <span className="font-bold">
-                  {r.period}/{r.quota} {r.frequency === "day" ? "aujourd'hui" : "cette semaine"}
-                  {r.period >= r.quota && " · quota atteint"}
+                  {alwaysWin
+                    ? `${r.period} ${r.frequency === "day" ? "aujourd'hui" : "cette semaine"} · ${r.total} au total`
+                    : `${r.period}/${r.quota} ${r.frequency === "day" ? "aujourd'hui" : "cette semaine"}${
+                        r.period >= r.quota ? " · quota atteint" : ""
+                      }`}
                 </span>
               </div>
             ))}
