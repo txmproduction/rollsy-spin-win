@@ -148,7 +148,7 @@ export default function PlayerWheel({ merchant }: { merchant: PublicMerchant }) 
       label: r.name,
       short: r.short_label || r.name,
       color: COLORS[i % COLORS.length]!,
-      emoji: EMOJIS[i % EMOJIS.length]!,
+      emoji: emojiFor(`${r.name} ${r.short_label ?? ""}`, i),
     }));
     return [...rewardSegments, LOSE_SEGMENT];
   }, [merchant.rewards]);
