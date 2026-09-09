@@ -587,7 +587,7 @@ function AdminPage() {
         {alwaysWin ? (
           <p className="ink-border mb-4 rounded-2xl bg-mint/40 px-4 py-3 text-sm font-bold">
             Mode 100% gagnant actif : les quotas ne sont plus utilisés. Réglez la chance de chaque
-            lot — les autres s'ajustent automatiquement, le total reste toujours à 100%.
+            lot par paliers de 10% — le total doit faire exactement 100% pour enregistrer.
           </p>
         ) : (
           <p className="ink-border mb-4 rounded-2xl bg-orange/15 px-4 py-3 text-sm font-bold">
