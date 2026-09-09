@@ -14,6 +14,54 @@ import {
   setAlwaysWinMode,
 } from "@/lib/rollsy.functions";
 
+type RewardRow = { name: string; quota: number; winPercent: number };
+
+// Répartit `remaining` sur les lots d'index != keepIndex, proportionnellement
+// à leurs valeurs actuelles, en garantissant un total exact de 100.
+function distribute(rows: RewardRow[], keepIndex: number, keptValue: number): RewardRow[] {
+  const others = rows.map((_, i) => i).filter((i) => i !== keepIndex);
+  if (others.length === 0) {
+    return rows.map((r, i) => (i === keepIndex ? { ...r, winPercent: 100 } : r));
+  }
+  const remaining = Math.max(0, 100 - keptValue);
+  const base = others.map((i) => Math.max(0, Number(rows[i]!.winPercent) || 0));
+  const sum = base.reduce((a, b) => a + b, 0);
+  const raw = others.map((_, k) => (sum > 0 ? (base[k]! / sum) * remaining : remaining / others.length));
+  const floored = raw.map((v) => Math.floor(v));
+  let rest = remaining - floored.reduce((a, b) => a + b, 0);
+  const order = raw
+    .map((v, k) => ({ k, frac: v - Math.floor(v) }))
+    .sort((a, b) => b.frac - a.frac);
+  for (const o of order) {
+    if (rest <= 0) break;
+    floored[o.k] = floored[o.k]! + 1;
+    rest -= 1;
+  }
+  const next = rows.map((r) => ({ ...r }));
+  next[keepIndex]!.winPercent = Math.min(100, Math.max(0, keptValue));
+  others.forEach((idx, k) => {
+    next[idx]!.winPercent = floored[k]!;
+  });
+  return next;
+}
+
+// Ramène toujours le total à 100% (répartition égale si aucune valeur définie).
+function normalizePercents(rows: RewardRow[]): RewardRow[] {
+  if (rows.length === 0) return rows;
+  const total = rows.reduce((a, r) => a + (Number(r.winPercent) || 0), 0);
+  if (total === 100) return rows;
+  if (total <= 0) {
+    const even = Math.floor(100 / rows.length);
+    const next = rows.map((r) => ({ ...r, winPercent: even }));
+    let rest = 100 - even * rows.length;
+    for (let i = 0; rest > 0; i++, rest--) next[i % next.length]!.winPercent += 1;
+    return next;
+  }
+  const scaled = Math.round((Number(rows[0]!.winPercent) || 0) * (100 / total));
+  return distribute(rows, 0, Math.min(100, Math.max(0, scaled)));
+}
+
+
 export const Route = createFileRoute("/admin")({
   ssr: false,
   head: () => ({
@@ -233,7 +281,9 @@ function AdminPage() {
 
   async function toggleAlwaysWin(next: boolean) {
     setAlwaysWin(next);
+    if (next) setRewardRows((prev) => normalizePercents(prev));
     setAlwaysWinMsg(null);
+
     try {
       await setAlwaysWinMode({ data: { alwaysWin: next } });
       await load();
@@ -276,14 +326,14 @@ function AdminPage() {
     setGoalUrl(data.merchant.goal_url ?? "");
     setFrequency((data.rewards[0]?.frequency as "day" | "week") ?? "week");
     setRewardMode(data.merchant.reward_mode === "next_visit" ? "next_visit" : "immediate");
-    setRewardRows(
-      data.rewards.map((r) => ({
-        name: r.name,
-        quota: r.quota,
-        winPercent: Number((r as { win_percent?: number | null }).win_percent ?? 0),
-      })),
-    );
-    setAlwaysWin(data.merchant.always_win === true);
+    const rows: RewardRow[] = data.rewards.map((r) => ({
+      name: r.name,
+      quota: r.quota,
+      winPercent: Number((r as { win_percent?: number | null }).win_percent ?? 0),
+    }));
+    const aw = data.merchant.always_win === true;
+    setRewardRows(aw ? normalizePercents(rows) : rows);
+    setAlwaysWin(aw);
     setLogoPath(null);
     setLogoPreview(data.logoUrl ?? null);
   }, [data]);
@@ -292,15 +342,12 @@ function AdminPage() {
     () => rewardRows.reduce((a, r) => a + (Number(r.winPercent) || 0), 0),
     [rewardRows],
   );
-  const percentOk = percentTotal === 100;
 
   async function saveConfig() {
-    if (alwaysWin && !percentOk) {
-      setSavedMsg("Le total des pourcentages doit être exactement 100%.");
-      return;
-    }
     setBusy(true);
     setSavedMsg(null);
+    const rowsToSave = alwaysWin ? normalizePercents(rewardRows) : rewardRows;
+    if (alwaysWin) setRewardRows(rowsToSave);
     try {
       await saveWheelSetup({
         data: {
@@ -308,11 +355,12 @@ function AdminPage() {
           goalUrl: goalUrl.trim(),
           frequency,
           rewardMode,
-          rewards: rewardRows.map((r) => ({
+          rewards: rowsToSave.map((r) => ({
             name: r.name.trim(),
             quota: Number(r.quota) || 1,
             winPercent: Math.max(0, Math.min(100, Math.round(Number(r.winPercent) || 0))),
           })),
+
           alwaysWin,
           ...(logoPath ? { logoPath } : {}),
           completeOnboarding: true,
@@ -571,8 +619,8 @@ function AdminPage() {
         </div>
         {alwaysWin ? (
           <p className="ink-border mb-4 rounded-2xl bg-mint/40 px-4 py-3 text-sm font-bold">
-            Mode 100% gagnant actif : les quotas ne sont plus utilisés. Réglez le pourcentage de
-            chance de chaque lot ; le total doit faire exactement 100%.
+            Mode 100% gagnant actif : les quotas ne sont plus utilisés. Réglez la chance de chaque
+            lot — les autres s'ajustent automatiquement, le total reste toujours à 100%.
           </p>
         ) : (
           <p className="ink-border mb-4 rounded-2xl bg-orange/15 px-4 py-3 text-sm font-bold">
@@ -592,23 +640,9 @@ function AdminPage() {
                 className="ink-border min-h-[52px] flex-1 rounded-full bg-yellow/30 px-5 font-bold outline-none"
               />
               {alwaysWin ? (
-                <input
-                  type="number"
-                  min={0}
-                  max={100}
-                  value={r.winPercent}
-                  aria-label="% de chance"
-                  onChange={(e) =>
-                    setRewardRows((prev) =>
-                      prev.map((x, j) =>
-                        j === i
-                          ? { ...x, winPercent: Math.max(0, Math.min(100, Number(e.target.value) || 0)) }
-                          : x,
-                      ),
-                    )
-                  }
-                  className="ink-border min-h-[52px] w-20 rounded-full bg-white px-3 text-center font-bold outline-none"
-                />
+                <span className="ink-border flex min-h-[52px] w-20 items-center justify-center rounded-full bg-white font-extrabold">
+                  {r.winPercent}%
+                </span>
               ) : (
                 <input
                   type="number"
@@ -624,7 +658,12 @@ function AdminPage() {
                 />
               )}
               <button
-                onClick={() => setRewardRows((prev) => prev.filter((_, j) => j !== i))}
+                onClick={() =>
+                  setRewardRows((prev) => {
+                    const kept = prev.filter((_, j) => j !== i);
+                    return alwaysWin ? normalizePercents(kept) : kept;
+                  })
+                }
                 className="ink-border min-h-[52px] rounded-full bg-white px-4 font-extrabold"
                 aria-label="Supprimer la récompense"
               >
@@ -641,9 +680,7 @@ function AdminPage() {
                   value={r.winPercent}
                   aria-label={`% de chance ${r.name || `lot ${i + 1}`}`}
                   onChange={(e) =>
-                    setRewardRows((prev) =>
-                      prev.map((x, j) => (j === i ? { ...x, winPercent: Number(e.target.value) } : x)),
-                    )
+                    setRewardRows((prev) => distribute(prev, i, Number(e.target.value)))
                   }
                   className="w-full accent-[var(--color-green)]"
                 />
@@ -655,21 +692,20 @@ function AdminPage() {
         {alwaysWin && (
           <p
             role="status"
-            className={`ink-border mb-4 rounded-2xl px-4 py-3 text-sm font-extrabold ${
-              percentOk ? "bg-green/20" : "bg-orange/30"
-            }`}
+            className="ink-border mb-4 rounded-2xl bg-green/20 px-4 py-3 text-sm font-extrabold"
           >
-            {percentOk
-              ? "Total : 100% ✅"
-              : percentTotal < 100
-                ? `Total : ${percentTotal}% ⚠️ — il manque ${100 - percentTotal}%`
-                : `Total : ${percentTotal}% ⚠️ — ${percentTotal - 100}% en trop`}
+            Total : {percentTotal}% ✅ — répartition automatique
           </p>
         )}
         <div className="flex flex-wrap gap-3">
           <button
             onClick={() =>
-              setRewardRows((prev) => [...prev, { name: "", quota: 1, winPercent: 0 }])
+              setRewardRows((prev) => {
+                const next = [...prev, { name: "", quota: 1, winPercent: 0 }];
+                if (!alwaysWin) return next;
+                const even = Math.floor(100 / next.length);
+                return distribute(next, next.length - 1, even);
+              })
             }
             disabled={rewardRows.length >= 8}
             className="ink-border min-h-[52px] rounded-full bg-white px-5 font-extrabold uppercase disabled:opacity-40"
@@ -678,12 +714,13 @@ function AdminPage() {
           </button>
           <button
             onClick={saveConfig}
-            disabled={busy || rewardRows.length < 2 || (alwaysWin && !percentOk)}
+            disabled={busy || rewardRows.length < 2}
             className="ink-border-thick min-h-[52px] rounded-full bg-pink px-6 font-extrabold uppercase text-white shadow-pop-ink disabled:opacity-50"
           >
             Enregistrer
           </button>
         </div>
+
         {savedMsg && <p className="mt-3 text-sm font-extrabold">{savedMsg}</p>}
       </Card>
 
