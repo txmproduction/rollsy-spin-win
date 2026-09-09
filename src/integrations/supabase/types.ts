@@ -102,6 +102,7 @@ export type Database = {
       merchants: {
         Row: {
           access_status: string
+          always_win: boolean
           cgv_accepted_at: string | null
           company_name: string
           created_at: string
@@ -122,6 +123,7 @@ export type Database = {
         }
         Insert: {
           access_status?: string
+          always_win?: boolean
           cgv_accepted_at?: string | null
           company_name: string
           created_at?: string
@@ -142,6 +144,7 @@ export type Database = {
         }
         Update: {
           access_status?: string
+          always_win?: boolean
           cgv_accepted_at?: string | null
           company_name?: string
           created_at?: string
