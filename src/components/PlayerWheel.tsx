@@ -398,26 +398,46 @@ export default function PlayerWheel({ merchant }: { merchant: PublicMerchant }) 
                 transition: "transform 4s cubic-bezier(0.17,0.67,0.16,0.99)",
               }}
             >
-              {segments.map((s, i) => (
+              {/* Séparateurs entre les parts */}
+              {segments.map((_, i) => (
                 <div
-                  key={i}
-                  className="absolute left-1/2 top-1/2 origin-left"
-                  style={{ transform: `rotate(${i * segAngle + segAngle / 2 - 90}deg) translateX(40px)` }}
-                >
-                  <div
-                    className="flex -translate-y-1/2 flex-col items-center gap-0.5 text-center font-extrabold leading-tight"
-                    style={{
-                      width: labelWidth,
-                      fontSize: labelFontSize,
-                      overflowWrap: "break-word",
-                      textShadow: "0 1px 0 rgba(255,255,255,0.35)",
-                    }}
-                  >
-                    <span aria-hidden>{s.emoji}</span>
-                    <span>{s.short}</span>
-                  </div>
-                </div>
+                  key={`sep-${i}`}
+                  className="pointer-events-none absolute left-1/2 top-0 h-1/2 w-[4px] -translate-x-1/2 rounded-full bg-[#1a1a1a]"
+                  style={{ transformOrigin: "50% 100%", transform: `rotate(${i * segAngle}deg)` }}
+                />
               ))}
+
+              {/* Libellés, toujours lisibles à l'endroit */}
+              {segments.map((s, i) => {
+                const a = i * segAngle + segAngle / 2;
+                return (
+                  <div
+                    key={i}
+                    className="pointer-events-none absolute left-0 top-0 h-1/2 w-full"
+                    style={{ transformOrigin: "50% 100%", transform: `rotate(${a}deg)` }}
+                  >
+                    <div
+                      className="absolute left-1/2 top-[14%] flex -translate-x-1/2 flex-col items-center gap-0.5 text-center font-extrabold leading-tight"
+                      style={{
+                        width: labelWidth,
+                        fontSize: labelFontSize,
+                        transform: `translateX(-50%) rotate(${-a}deg)`,
+                        overflowWrap: "break-word",
+                        textShadow: "0 1px 0 rgba(255,255,255,0.35)",
+                      }}
+                    >
+                      <span aria-hidden>{s.emoji}</span>
+                      <span>{s.short}</span>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Ombre interne pour un rendu plus premium */}
+              <div
+                className="pointer-events-none absolute inset-0 rounded-full"
+                style={{ boxShadow: "inset 0 0 26px rgba(0,0,0,0.25)" }}
+              />
             </div>
           </div>
 
