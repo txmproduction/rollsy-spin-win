@@ -1,0 +1,1 @@
+UPDATE public.rewards SET short_label = name WHERE short_label IS NOT NULL AND short_label <> name AND name LIKE short_label || '%';

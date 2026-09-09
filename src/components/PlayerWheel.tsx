@@ -90,7 +90,7 @@ export default function PlayerWheel({ merchant }: { merchant: PublicMerchant }) 
     const rewardSegments = merchant.rewards.map((r, i) => ({
       rewardId: r.id,
       label: r.name,
-      short: r.short_label || r.name.slice(0, 14),
+      short: r.short_label || r.name,
       color: COLORS[i % COLORS.length]!,
       emoji: EMOJIS[i % EMOJIS.length]!,
     }));
@@ -98,6 +98,13 @@ export default function PlayerWheel({ merchant }: { merchant: PublicMerchant }) 
   }, [merchant.rewards]);
 
   const segAngle = 360 / (segments.length || 1);
+
+  // Largeur de texte disponible dans un segment (corde du cercle au rayon du libellé).
+  const labelWidth = useMemo(() => {
+    const segRad = (segAngle * Math.PI) / 180;
+    return Math.max(54, Math.min(110, Math.round(2 * 78 * Math.sin(segRad / 2))));
+  }, [segAngle]);
+  const labelFontSize = segAngle <= 36 ? 10 : segAngle <= 51.5 ? 11 : 12;
 
   const conicGradient = useMemo(() => {
     const stops = segments
@@ -338,10 +345,21 @@ export default function PlayerWheel({ merchant }: { merchant: PublicMerchant }) 
               {segments.map((s, i) => (
                 <div
                   key={i}
-                  className="absolute left-1/2 top-1/2 origin-left whitespace-nowrap text-sm font-extrabold"
-                  style={{ transform: `rotate(${i * segAngle + segAngle / 2 - 90}deg) translateX(48px)` }}
+                  className="absolute left-1/2 top-1/2 origin-left"
+                  style={{ transform: `rotate(${i * segAngle + segAngle / 2 - 90}deg) translateX(40px)` }}
                 >
-                  {s.emoji} {s.short}
+                  <div
+                    className="flex -translate-y-1/2 flex-col items-center gap-0.5 text-center font-extrabold leading-tight"
+                    style={{
+                      width: labelWidth,
+                      fontSize: labelFontSize,
+                      overflowWrap: "break-word",
+                      textShadow: "0 1px 0 rgba(255,255,255,0.35)",
+                    }}
+                  >
+                    <span aria-hidden>{s.emoji}</span>
+                    <span>{s.short}</span>
+                  </div>
                 </div>
               ))}
             </div>
