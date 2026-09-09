@@ -281,7 +281,9 @@ function AdminPage() {
 
   async function toggleAlwaysWin(next: boolean) {
     setAlwaysWin(next);
+    if (next) setRewardRows((prev) => normalizePercents(prev));
     setAlwaysWinMsg(null);
+
     try {
       await setAlwaysWinMode({ data: { alwaysWin: next } });
       await load();
