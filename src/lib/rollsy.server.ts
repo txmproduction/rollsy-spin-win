@@ -195,11 +195,12 @@ export async function decideAndRecordSpin(slug: string, clientId: string | null)
   const db = await admin();
   const { data: merchant } = await db
     .from("merchants")
-    .select("id, reward_mode")
+    .select("id, reward_mode, always_win")
     .eq("slug", slug)
     .maybeSingle();
   if (!merchant) throw new Error("Commerce introuvable.");
   const merchantId = merchant.id as string;
+  const alwaysWin = (merchant as { always_win?: boolean }).always_win === true;
   const rewardMode: "immediate" | "next_visit" =
     (merchant.reward_mode as string) === "next_visit" ? "next_visit" : "immediate";
 
@@ -209,13 +210,16 @@ export async function decideAndRecordSpin(slug: string, clientId: string | null)
     .eq("merchant_id", merchantId)
     .eq("active", true);
 
-  const { data: last } = await db
-    .from("spins")
-    .select("result")
-    .eq("merchant_id", merchantId)
-    .order("created_at", { ascending: false })
-    .limit(1);
-  const lastWasWin = last?.[0]?.result === "win";
+  let lastWasWin = false;
+  if (!alwaysWin) {
+    const { data: last } = await db
+      .from("spins")
+      .select("result")
+      .eq("merchant_id", merchantId)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    lastWasWin = last?.[0]?.result === "win";
+  }
 
   const eligible: { id: string }[] = [];
   if (!lastWasWin) {
@@ -234,15 +238,20 @@ export async function decideAndRecordSpin(slug: string, clientId: string | null)
 
   let wonId: string | null = null;
   if (eligible.length > 0) {
-    let roll = Math.random() * (eligible.length + LOSE_WEIGHT);
-    for (const rew of eligible) {
-      roll -= 1;
-      if (roll <= 0) {
-        wonId = rew.id;
-        break;
+    if (alwaysWin) {
+      wonId = eligible[Math.floor(Math.random() * eligible.length)]!.id;
+    } else {
+      let roll = Math.random() * (eligible.length + LOSE_WEIGHT);
+      for (const rew of eligible) {
+        roll -= 1;
+        if (roll <= 0) {
+          wonId = rew.id;
+          break;
+        }
       }
     }
   }
+
 
   const code = wonId && rewardMode === "next_visit" ? generateCode() : null;
   const { error } = await db.from("spins").insert({
