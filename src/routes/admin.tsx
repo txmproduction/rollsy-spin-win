@@ -308,6 +308,7 @@ function AdminPage() {
     () => rewardRows.reduce((a, r) => a + (Number(r.winPercent) || 0), 0),
     [rewardRows],
   );
+  const percentOk = percentTotal === 100;
 
   async function saveConfig() {
     setBusy(true);
@@ -655,29 +656,36 @@ function AdminPage() {
         {alwaysWin && (
           <p
             role="status"
-            className="ink-border mb-4 rounded-2xl bg-green/20 px-4 py-3 text-sm font-extrabold"
+            className={`ink-border mb-4 rounded-2xl px-4 py-3 text-sm font-extrabold ${
+              percentOk ? "bg-green/20" : "bg-orange/30"
+            }`}
           >
-            Total : {percentTotal}% ✅ — répartition automatique
+            {percentOk
+              ? "Total : 100% ✅"
+              : percentTotal < 100
+                ? `Total : ${percentTotal}% ⚠️ — il manque ${100 - percentTotal}%`
+                : `Total : ${percentTotal}% ⚠️ — ${percentTotal - 100}% en trop`}
           </p>
         )}
         <div className="flex flex-wrap gap-3">
           <button
-            onClick={() =>
-              setRewardRows((prev) => {
-                const next = [...prev, { name: "", quota: 1, winPercent: 0 }];
-                if (!alwaysWin) return next;
-                const even = Math.floor(100 / next.length);
-                return distribute(next, next.length - 1, even);
-              })
-            }
+            onClick={() => setRewardRows((prev) => [...prev, { name: "", quota: 1, winPercent: 0 }])}
             disabled={rewardRows.length >= 8}
             className="ink-border min-h-[52px] rounded-full bg-white px-5 font-extrabold uppercase disabled:opacity-40"
           >
             + Ajouter un lot
           </button>
+          {alwaysWin && (
+            <button
+              onClick={() => setRewardRows((prev) => evenSplit(prev))}
+              className="ink-border min-h-[52px] rounded-full bg-mint px-5 font-extrabold uppercase"
+            >
+              Répartir équitablement
+            </button>
+          )}
           <button
             onClick={saveConfig}
-            disabled={busy || rewardRows.length < 2}
+            disabled={busy || rewardRows.length < 2 || (alwaysWin && !percentOk)}
             className="ink-border-thick min-h-[52px] rounded-full bg-pink px-6 font-extrabold uppercase text-white shadow-pop-ink disabled:opacity-50"
           >
             Enregistrer
