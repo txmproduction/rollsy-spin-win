@@ -566,43 +566,108 @@ function AdminPage() {
             ))}
           </div>
         </div>
-        <p className="ink-border mb-4 rounded-2xl bg-orange/15 px-4 py-3 text-sm font-bold">
-          ⚠️ Attention : si vous avez beaucoup de joueurs mais peu de victoires autorisées par
-          jour/semaine, l'expérience sera frustrante pour vos clients. Adaptez le nombre de
-          récompenses et la fréquence de gains à votre trafic réel.
-        </p>
+        {alwaysWin ? (
+          <p className="ink-border mb-4 rounded-2xl bg-mint/40 px-4 py-3 text-sm font-bold">
+            Mode 100% gagnant actif : les quotas ne sont plus utilisés. Réglez le pourcentage de
+            chance de chaque lot ; le total doit faire exactement 100%.
+          </p>
+        ) : (
+          <p className="ink-border mb-4 rounded-2xl bg-orange/15 px-4 py-3 text-sm font-bold">
+            ⚠️ Attention : si vous avez beaucoup de joueurs mais peu de victoires autorisées par
+            jour/semaine, l'expérience sera frustrante pour vos clients. Adaptez le nombre de
+            récompenses et la fréquence de gains à votre trafic réel.
+          </p>
+        )}
         {rewardRows.map((r, i) => (
-          <div key={i} className="mb-3 flex gap-2">
-            <input
-              value={r.name}
-              onChange={(e) =>
-                setRewardRows((prev) => prev.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))
-              }
-              className="ink-border min-h-[52px] flex-1 rounded-full bg-yellow/30 px-5 font-bold outline-none"
-            />
-            <input
-              type="number"
-              min={1}
-              value={r.quota}
-              onChange={(e) =>
-                setRewardRows((prev) =>
-                  prev.map((x, j) => (j === i ? { ...x, quota: Number(e.target.value) } : x)),
-                )
-              }
-              className="ink-border min-h-[52px] w-20 rounded-full bg-white px-4 text-center font-bold outline-none"
-            />
-            <button
-              onClick={() => setRewardRows((prev) => prev.filter((_, j) => j !== i))}
-              className="ink-border min-h-[52px] rounded-full bg-white px-4 font-extrabold"
-              aria-label="Supprimer la récompense"
-            >
-              ✕
-            </button>
+          <div key={i} className="mb-3">
+            <div className="flex gap-2">
+              <input
+                value={r.name}
+                onChange={(e) =>
+                  setRewardRows((prev) => prev.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))
+                }
+                className="ink-border min-h-[52px] flex-1 rounded-full bg-yellow/30 px-5 font-bold outline-none"
+              />
+              {alwaysWin ? (
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={r.winPercent}
+                  aria-label="% de chance"
+                  onChange={(e) =>
+                    setRewardRows((prev) =>
+                      prev.map((x, j) =>
+                        j === i
+                          ? { ...x, winPercent: Math.max(0, Math.min(100, Number(e.target.value) || 0)) }
+                          : x,
+                      ),
+                    )
+                  }
+                  className="ink-border min-h-[52px] w-20 rounded-full bg-white px-3 text-center font-bold outline-none"
+                />
+              ) : (
+                <input
+                  type="number"
+                  min={1}
+                  value={r.quota}
+                  aria-label="Quota"
+                  onChange={(e) =>
+                    setRewardRows((prev) =>
+                      prev.map((x, j) => (j === i ? { ...x, quota: Number(e.target.value) } : x)),
+                    )
+                  }
+                  className="ink-border min-h-[52px] w-20 rounded-full bg-white px-4 text-center font-bold outline-none"
+                />
+              )}
+              <button
+                onClick={() => setRewardRows((prev) => prev.filter((_, j) => j !== i))}
+                className="ink-border min-h-[52px] rounded-full bg-white px-4 font-extrabold"
+                aria-label="Supprimer la récompense"
+              >
+                ✕
+              </button>
+            </div>
+            {alwaysWin && (
+              <div className="mt-2 flex items-center gap-3 px-2">
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={r.winPercent}
+                  aria-label={`% de chance ${r.name || `lot ${i + 1}`}`}
+                  onChange={(e) =>
+                    setRewardRows((prev) =>
+                      prev.map((x, j) => (j === i ? { ...x, winPercent: Number(e.target.value) } : x)),
+                    )
+                  }
+                  className="w-full accent-[var(--color-green)]"
+                />
+                <span className="w-14 text-right text-sm font-extrabold">{r.winPercent}%</span>
+              </div>
+            )}
           </div>
         ))}
+        {alwaysWin && (
+          <p
+            role="status"
+            className={`ink-border mb-4 rounded-2xl px-4 py-3 text-sm font-extrabold ${
+              percentOk ? "bg-green/20" : "bg-orange/30"
+            }`}
+          >
+            {percentOk
+              ? "Total : 100% ✅"
+              : percentTotal < 100
+                ? `Total : ${percentTotal}% ⚠️ — il manque ${100 - percentTotal}%`
+                : `Total : ${percentTotal}% ⚠️ — ${percentTotal - 100}% en trop`}
+          </p>
+        )}
         <div className="flex flex-wrap gap-3">
           <button
-            onClick={() => setRewardRows((prev) => [...prev, { name: "", quota: 1 }])}
+            onClick={() =>
+              setRewardRows((prev) => [...prev, { name: "", quota: 1, winPercent: 0 }])
+            }
             disabled={rewardRows.length >= 8}
             className="ink-border min-h-[52px] rounded-full bg-white px-5 font-extrabold uppercase disabled:opacity-40"
           >
@@ -610,7 +675,7 @@ function AdminPage() {
           </button>
           <button
             onClick={saveConfig}
-            disabled={busy || rewardRows.length < 2}
+            disabled={busy || rewardRows.length < 2 || (alwaysWin && !percentOk)}
             className="ink-border-thick min-h-[52px] rounded-full bg-pink px-6 font-extrabold uppercase text-white shadow-pop-ink disabled:opacity-50"
           >
             Enregistrer
