@@ -16,49 +16,15 @@ import {
 
 type RewardRow = { name: string; quota: number; winPercent: number };
 
-// Répartit `remaining` sur les lots d'index != keepIndex, proportionnellement
-// à leurs valeurs actuelles, en garantissant un total exact de 100.
-function distribute(rows: RewardRow[], keepIndex: number, keptValue: number): RewardRow[] {
-  const others = rows.map((_, i) => i).filter((i) => i !== keepIndex);
-  if (others.length === 0) {
-    return rows.map((r, i) => (i === keepIndex ? { ...r, winPercent: 100 } : r));
-  }
-  const remaining = Math.max(0, 100 - keptValue);
-  const base = others.map((i) => Math.max(0, Number(rows[i]!.winPercent) || 0));
-  const sum = base.reduce((a, b) => a + b, 0);
-  const raw = others.map((_, k) => (sum > 0 ? (base[k]! / sum) * remaining : remaining / others.length));
-  const floored = raw.map((v) => Math.floor(v));
-  let rest = remaining - floored.reduce((a, b) => a + b, 0);
-  const order = raw
-    .map((v, k) => ({ k, frac: v - Math.floor(v) }))
-    .sort((a, b) => b.frac - a.frac);
-  for (const o of order) {
-    if (rest <= 0) break;
-    floored[o.k] = floored[o.k]! + 1;
-    rest -= 1;
-  }
-  const next = rows.map((r) => ({ ...r }));
-  next[keepIndex]!.winPercent = Math.min(100, Math.max(0, keptValue));
-  others.forEach((idx, k) => {
-    next[idx]!.winPercent = floored[k]!;
-  });
-  return next;
-}
-
-// Ramène toujours le total à 100% (répartition égale si aucune valeur définie).
-function normalizePercents(rows: RewardRow[]): RewardRow[] {
+// Répartit 100% en parts égales arrondies à la dizaine entre tous les lots.
+function evenSplit(rows: RewardRow[]): RewardRow[] {
   if (rows.length === 0) return rows;
-  const total = rows.reduce((a, r) => a + (Number(r.winPercent) || 0), 0);
-  if (total === 100) return rows;
-  if (total <= 0) {
-    const even = Math.floor(100 / rows.length);
-    const next = rows.map((r) => ({ ...r, winPercent: even }));
-    let rest = 100 - even * rows.length;
-    for (let i = 0; rest > 0; i++, rest--) next[i % next.length]!.winPercent += 1;
-    return next;
-  }
-  const scaled = Math.round((Number(rows[0]!.winPercent) || 0) * (100 / total));
-  return distribute(rows, 0, Math.min(100, Math.max(0, scaled)));
+  const base = Math.floor(100 / rows.length / 10) * 10;
+  let rest = (100 - base * rows.length) / 10;
+  return rows.map((r, i) => {
+    const extra = i < rest ? 10 : 0;
+    return { ...r, winPercent: base + extra };
+  });
 }
 
 
@@ -281,7 +247,7 @@ function AdminPage() {
 
   async function toggleAlwaysWin(next: boolean) {
     setAlwaysWin(next);
-    if (next) setRewardRows((prev) => normalizePercents(prev));
+    if (next) setRewardRows((prev) => evenSplit(prev));
     setAlwaysWinMsg(null);
 
     try {
@@ -332,7 +298,7 @@ function AdminPage() {
       winPercent: Number((r as { win_percent?: number | null }).win_percent ?? 0),
     }));
     const aw = data.merchant.always_win === true;
-    setRewardRows(aw ? normalizePercents(rows) : rows);
+    setRewardRows(rows);
     setAlwaysWin(aw);
     setLogoPath(null);
     setLogoPreview(data.logoUrl ?? null);
@@ -342,12 +308,17 @@ function AdminPage() {
     () => rewardRows.reduce((a, r) => a + (Number(r.winPercent) || 0), 0),
     [rewardRows],
   );
+  const percentOk = percentTotal === 100;
 
   async function saveConfig() {
     setBusy(true);
     setSavedMsg(null);
-    const rowsToSave = alwaysWin ? normalizePercents(rewardRows) : rewardRows;
-    if (alwaysWin) setRewardRows(rowsToSave);
+    if (alwaysWin && !percentOk) {
+      setSavedMsg("Le total des pourcentages doit être égal à 100%.");
+      setBusy(false);
+      return;
+    }
+    const rowsToSave = rewardRows;
     try {
       await saveWheelSetup({
         data: {
@@ -620,7 +591,7 @@ function AdminPage() {
         {alwaysWin ? (
           <p className="ink-border mb-4 rounded-2xl bg-mint/40 px-4 py-3 text-sm font-bold">
             Mode 100% gagnant actif : les quotas ne sont plus utilisés. Réglez la chance de chaque
-            lot — les autres s'ajustent automatiquement, le total reste toujours à 100%.
+            lot par paliers de 10% — le total doit faire exactement 100% pour enregistrer.
           </p>
         ) : (
           <p className="ink-border mb-4 rounded-2xl bg-orange/15 px-4 py-3 text-sm font-bold">
@@ -658,12 +629,7 @@ function AdminPage() {
                 />
               )}
               <button
-                onClick={() =>
-                  setRewardRows((prev) => {
-                    const kept = prev.filter((_, j) => j !== i);
-                    return alwaysWin ? normalizePercents(kept) : kept;
-                  })
-                }
+                onClick={() => setRewardRows((prev) => prev.filter((_, j) => j !== i))}
                 className="ink-border min-h-[52px] rounded-full bg-white px-4 font-extrabold"
                 aria-label="Supprimer la récompense"
               >
@@ -676,11 +642,13 @@ function AdminPage() {
                   type="range"
                   min={0}
                   max={100}
-                  step={1}
+                  step={10}
                   value={r.winPercent}
                   aria-label={`% de chance ${r.name || `lot ${i + 1}`}`}
                   onChange={(e) =>
-                    setRewardRows((prev) => distribute(prev, i, Number(e.target.value)))
+                    setRewardRows((prev) =>
+                      prev.map((x, j) => (j === i ? { ...x, winPercent: Number(e.target.value) } : x)),
+                    )
                   }
                   className="w-full accent-[var(--color-green)]"
                 />
@@ -692,29 +660,36 @@ function AdminPage() {
         {alwaysWin && (
           <p
             role="status"
-            className="ink-border mb-4 rounded-2xl bg-green/20 px-4 py-3 text-sm font-extrabold"
+            className={`ink-border mb-4 rounded-2xl px-4 py-3 text-sm font-extrabold ${
+              percentOk ? "bg-green/20" : "bg-orange/30"
+            }`}
           >
-            Total : {percentTotal}% ✅ — répartition automatique
+            {percentOk
+              ? "Total : 100% ✅"
+              : percentTotal < 100
+                ? `Total : ${percentTotal}% ⚠️ — il manque ${100 - percentTotal}%`
+                : `Total : ${percentTotal}% ⚠️ — ${percentTotal - 100}% en trop`}
           </p>
         )}
         <div className="flex flex-wrap gap-3">
           <button
-            onClick={() =>
-              setRewardRows((prev) => {
-                const next = [...prev, { name: "", quota: 1, winPercent: 0 }];
-                if (!alwaysWin) return next;
-                const even = Math.floor(100 / next.length);
-                return distribute(next, next.length - 1, even);
-              })
-            }
+            onClick={() => setRewardRows((prev) => [...prev, { name: "", quota: 1, winPercent: 0 }])}
             disabled={rewardRows.length >= 8}
             className="ink-border min-h-[52px] rounded-full bg-white px-5 font-extrabold uppercase disabled:opacity-40"
           >
             + Ajouter un lot
           </button>
+          {alwaysWin && (
+            <button
+              onClick={() => setRewardRows((prev) => evenSplit(prev))}
+              className="ink-border min-h-[52px] rounded-full bg-mint px-5 font-extrabold uppercase"
+            >
+              Répartir équitablement
+            </button>
+          )}
           <button
             onClick={saveConfig}
-            disabled={busy || rewardRows.length < 2}
+            disabled={busy || rewardRows.length < 2 || (alwaysWin && !percentOk)}
             className="ink-border-thick min-h-[52px] rounded-full bg-pink px-6 font-extrabold uppercase text-white shadow-pop-ink disabled:opacity-50"
           >
             Enregistrer
