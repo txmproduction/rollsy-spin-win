@@ -1,0 +1,1 @@
+ALTER TABLE public.merchants ADD COLUMN IF NOT EXISTS always_win boolean NOT NULL DEFAULT false;

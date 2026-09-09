@@ -53,6 +53,10 @@ export const setupSchema = z.object({
   completeOnboarding: z.boolean().optional(),
 });
 
+export const alwaysWinSchema = z.object({
+  alwaysWin: z.boolean(),
+});
+
 export const codeSchema = z.object({
   spinId: z.string().uuid(),
   used: z.boolean(),
@@ -195,11 +199,12 @@ export async function decideAndRecordSpin(slug: string, clientId: string | null)
   const db = await admin();
   const { data: merchant } = await db
     .from("merchants")
-    .select("id, reward_mode")
+    .select("id, reward_mode, always_win")
     .eq("slug", slug)
     .maybeSingle();
   if (!merchant) throw new Error("Commerce introuvable.");
   const merchantId = merchant.id as string;
+  const alwaysWin = (merchant as { always_win?: boolean }).always_win === true;
   const rewardMode: "immediate" | "next_visit" =
     (merchant.reward_mode as string) === "next_visit" ? "next_visit" : "immediate";
 
@@ -209,13 +214,16 @@ export async function decideAndRecordSpin(slug: string, clientId: string | null)
     .eq("merchant_id", merchantId)
     .eq("active", true);
 
-  const { data: last } = await db
-    .from("spins")
-    .select("result")
-    .eq("merchant_id", merchantId)
-    .order("created_at", { ascending: false })
-    .limit(1);
-  const lastWasWin = last?.[0]?.result === "win";
+  let lastWasWin = false;
+  if (!alwaysWin) {
+    const { data: last } = await db
+      .from("spins")
+      .select("result")
+      .eq("merchant_id", merchantId)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    lastWasWin = last?.[0]?.result === "win";
+  }
 
   const eligible: { id: string }[] = [];
   if (!lastWasWin) {
@@ -234,15 +242,20 @@ export async function decideAndRecordSpin(slug: string, clientId: string | null)
 
   let wonId: string | null = null;
   if (eligible.length > 0) {
-    let roll = Math.random() * (eligible.length + LOSE_WEIGHT);
-    for (const rew of eligible) {
-      roll -= 1;
-      if (roll <= 0) {
-        wonId = rew.id;
-        break;
+    if (alwaysWin) {
+      wonId = eligible[Math.floor(Math.random() * eligible.length)]!.id;
+    } else {
+      let roll = Math.random() * (eligible.length + LOSE_WEIGHT);
+      for (const rew of eligible) {
+        roll -= 1;
+        if (roll <= 0) {
+          wonId = rew.id;
+          break;
+        }
       }
     }
   }
+
 
   const code = wonId && rewardMode === "next_visit" ? generateCode() : null;
   const { error } = await db.from("spins").insert({
@@ -264,7 +277,7 @@ export async function findMerchantByOwner(userId: string) {
   const { data } = await db
     .from("merchants")
     .select(
-      "id, slug, company_name, first_name, last_name, phone, email, goal_type, goal_url, reward_mode, logo_path, status, access_status, onboarding_completed, trial_ends_at",
+      "id, slug, company_name, first_name, last_name, phone, email, goal_type, goal_url, reward_mode, always_win, logo_path, status, access_status, onboarding_completed, trial_ends_at",
     )
     .eq("owner_id", userId)
     .maybeSingle();
@@ -307,7 +320,7 @@ export async function ensureMerchantForUser(
       trial_ends_at: trialEnds.toISOString(),
     })
     .select(
-      "id, slug, company_name, first_name, last_name, phone, email, goal_type, goal_url, reward_mode, logo_path, status, access_status, onboarding_completed, trial_ends_at",
+      "id, slug, company_name, first_name, last_name, phone, email, goal_type, goal_url, reward_mode, always_win, logo_path, status, access_status, onboarding_completed, trial_ends_at",
     )
     .single();
   if (error || !data) {
@@ -376,6 +389,17 @@ export async function saveMerchantSetup(userId: string, input: z.infer<typeof se
     );
   }
   return { ok: true as const, slug: m.slug as string };
+}
+
+export async function setMerchantAlwaysWin(userId: string, alwaysWin: boolean) {
+  const m = await requireMerchant(userId);
+  const db = await admin();
+  const { error } = await db.from("merchants").update({ always_win: alwaysWin }).eq("id", m.id);
+  if (error) {
+    console.error("[rollsy] always_win update failed", error);
+    throw new Error("Échec de la mise à jour du mode 100% gagnant.");
+  }
+  return { ok: true as const, alwaysWin };
 }
 
 export async function loadMerchantAdminData(userId: string) {

@@ -17,6 +17,8 @@ import {
   loadMerchantAdminData,
   resetMerchantData,
   setSpinCodeUsed,
+  setMerchantAlwaysWin,
+  alwaysWinSchema,
   getAccessStateForUser,
   listAllMerchants,
   updateMerchantAccess,
@@ -70,6 +72,11 @@ export const markSpinCodeUsed = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => codeSchema.parse(data))
   .handler(async ({ context, data }) => setSpinCodeUsed(context.userId, data.spinId, data.used));
+
+export const setAlwaysWinMode = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => alwaysWinSchema.parse(data))
+  .handler(async ({ context, data }) => setMerchantAlwaysWin(context.userId, data.alwaysWin));
 
 export const resetRollsyData = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

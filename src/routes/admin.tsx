@@ -11,6 +11,7 @@ import {
   completeSignup,
   markSpinCodeUsed,
   amISuperAdmin,
+  setAlwaysWinMode,
 } from "@/lib/rollsy.functions";
 
 export const Route = createFileRoute("/admin")({
@@ -225,6 +226,21 @@ function AdminPage() {
   const [logoPath, setLogoPath] = useState<string | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [alwaysWin, setAlwaysWin] = useState(false);
+  const [alwaysWinMsg, setAlwaysWinMsg] = useState<string | null>(null);
+
+  async function toggleAlwaysWin(next: boolean) {
+    setAlwaysWin(next);
+    setAlwaysWinMsg(null);
+    try {
+      await setAlwaysWinMode({ data: { alwaysWin: next } });
+      await load();
+      setAlwaysWinMsg(next ? "Mode 100% gagnant activé ✅" : "Mode 100% gagnant désactivé.");
+    } catch {
+      setAlwaysWin(!next);
+      setAlwaysWinMsg("Modification impossible, réessayez.");
+    }
+  }
 
   async function handleLogoFile(file: File | null) {
     if (!file) return;
@@ -259,6 +275,7 @@ function AdminPage() {
     setFrequency((data.rewards[0]?.frequency as "day" | "week") ?? "week");
     setRewardMode(data.merchant.reward_mode === "next_visit" ? "next_visit" : "immediate");
     setRewardRows(data.rewards.map((r) => ({ name: r.name, quota: r.quota })));
+    setAlwaysWin(data.merchant.always_win === true);
     setLogoPath(null);
     setLogoPreview(data.logoUrl ?? null);
   }, [data]);
@@ -577,6 +594,45 @@ function AdminPage() {
           </button>
         </div>
         {savedMsg && <p className="mt-3 text-sm font-extrabold">{savedMsg}</p>}
+      </Card>
+
+      <Card title={'Mode "100% gagnant"'}>
+        <p className="mb-3 font-bold text-ink/80">
+          Activez cette option pour que chaque participant reparte systématiquement avec un lot
+          (tant qu'il reste des lots disponibles selon vos quotas).
+        </p>
+        <div className="ink-border mb-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white px-4 py-3">
+          <div className="flex items-center gap-3">
+            <span className="font-extrabold">
+              {alwaysWin ? "Activé" : "Désactivé"}
+            </span>
+            {alwaysWin && (
+              <span className="ink-border rounded-full bg-mint px-3 py-1 text-xs font-extrabold">
+                100% gagnant activé
+              </span>
+            )}
+          </div>
+          <button
+            role="switch"
+            aria-checked={alwaysWin}
+            aria-label='Mode 100% gagnant'
+            onClick={() => void toggleAlwaysWin(!alwaysWin)}
+            className={`ink-border relative h-[36px] w-[68px] rounded-full transition-colors ${
+              alwaysWin ? "bg-green" : "bg-yellow/40"
+            }`}
+          >
+            <span
+              className={`ink-border absolute top-[3px] h-[26px] w-[26px] rounded-full bg-white transition-all ${
+                alwaysWin ? "left-[38px]" : "left-[3px]"
+              }`}
+            />
+          </button>
+        </div>
+        <p className="ink-border rounded-2xl bg-orange/15 px-4 py-3 text-sm font-bold">
+          ⚠️ Attention : cela augmente fortement le nombre de récompenses distribuées. Vos quotas
+          par lot (par jour ou par semaine) restent toujours respectés.
+        </p>
+        {alwaysWinMsg && <p className="mt-3 text-sm font-extrabold">{alwaysWinMsg}</p>}
       </Card>
 
       {rewardMode === "next_visit" && (
