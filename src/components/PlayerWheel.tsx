@@ -9,7 +9,63 @@ type Segment = { rewardId: string | null; label: string; short: string; color: s
 
 const LOSE_SEGMENT: Segment = { rewardId: null, label: "Perdu", short: "Perdu", color: "#A855F7", emoji: "🔁" };
 const COLORS = ["#FF3DA6", "#FFE600", "#00D26A", "#00B4FF", "#FF6B00"];
-const EMOJIS = ["🍗", "🥤", "💸", "🎁", "🍰", "🎈", "🍟", "☕"];
+const FALLBACK_EMOJIS = ["🎁", "🎉", "⭐", "🏆", "🎈", "✨", "🍀", "💥"];
+
+// Choisit un emoji cohérent avec le libellé du lot.
+const EMOJI_RULES: Array<[RegExp, string]> = [
+  [/caf[eé]|expresso|espresso/i, "☕"],
+  [/th[eé]\b|infusion/i, "🍵"],
+  [/bubble\s*tea|smoothie|milkshake|jus|boisson|soda|limonade|verre/i, "🥤"],
+  [/bi[eè]re|pinte/i, "🍺"],
+  [/vin|champagne|coupe/i, "🍷"],
+  [/cocktail|mojito|ap[eé]ro/i, "🍹"],
+  [/donut|beignet/i, "🍩"],
+  [/g[aâ]teau|p[aâ]tisserie|part de/i, "🍰"],
+  [/cookie|biscuit|sabl[eé]/i, "🍪"],
+  [/croissant|viennoiserie|pain au chocolat/i, "🥐"],
+  [/cr[eê]pe|gaufre|pancake/i, "🥞"],
+  [/glace|sorbet|cr[eè]me glac/i, "🍦"],
+  [/sucette|bonbon|chocolat|friandise/i, "🍬"],
+  [/pizza/i, "🍕"],
+  [/burger|hamburger/i, "🍔"],
+  [/frite/i, "🍟"],
+  [/poulet|tenders|nugget|wings/i, "🍗"],
+  [/sandwich|panini|wrap|kebab|tacos/i, "🥪"],
+  [/salade/i, "🥗"],
+  [/sushi|maki/i, "🍣"],
+  [/pasta|p[aâ]tes/i, "🍝"],
+  [/menu|repas|plat|d[eé]jeuner|d[îi]ner/i, "🍽️"],
+  [/remise|r[eé]duction|%|promo|solde/i, "💸"],
+  [/bon d'achat|bon achat|avoir|ch[eè]que|euro|€/i, "💶"],
+  [/gratuit|offert(e)?\b/i, "🎁"],
+  [/estimation|expertise|diagnostic|conseil|consultation/i, "📋"],
+  [/visite|rendez-vous|rdv/i, "🗓️"],
+  [/porte[- ]?cl[eé]f?s?|cl[eé]/i, "🔑"],
+  [/stylo|crayon/i, "🖊️"],
+  [/calendrier|agenda/i, "📆"],
+  [/cabas|sac|tote/i, "🛍️"],
+  [/bandana|foulard|[eé]charpe/i, "🧣"],
+  [/casquette|bonnet|chapeau/i, "🧢"],
+  [/t-?shirt|tee|v[eê]tement|textile/i, "👕"],
+  [/mug|tasse|gourde/i, "🥛"],
+  [/jeton|token|coin/i, "🪙"],
+  [/bougie|parfum/i, "🕯️"],
+  [/fleur|bouquet|rose/i, "💐"],
+  [/livre|bd|magazine/i, "📚"],
+  [/photo|shooting/i, "📸"],
+  [/massage|soin|spa|beaut[eé]/i, "💆"],
+  [/coiffure|shampoing|coupe de cheveux/i, "💇"],
+  [/ongle|manucure|vernis/i, "💅"],
+  [/lavage|nettoyage|voiture|auto/i, "🚗"],
+  [/gros lot|jackpot|grand prix|super/i, "🏆"],
+  [/tirage|tombola|ticket/i, "🎟️"],
+  [/perdu|dommage|retente|rejou/i, "🔁"],
+];
+
+function emojiFor(text: string, index: number): string {
+  for (const [re, emoji] of EMOJI_RULES) if (re.test(text)) return emoji;
+  return FALLBACK_EMOJIS[index % FALLBACK_EMOJIS.length]!;
+}
 
 function fireConfetti() {
   const burst = (opts: confetti.Options) =>
@@ -92,7 +148,7 @@ export default function PlayerWheel({ merchant }: { merchant: PublicMerchant }) 
       label: r.name,
       short: r.short_label || r.name,
       color: COLORS[i % COLORS.length]!,
-      emoji: EMOJIS[i % EMOJIS.length]!,
+      emoji: emojiFor(`${r.name} ${r.short_label ?? ""}`, i),
     }));
     return [...rewardSegments, LOSE_SEGMENT];
   }, [merchant.rewards]);
@@ -342,26 +398,46 @@ export default function PlayerWheel({ merchant }: { merchant: PublicMerchant }) 
                 transition: "transform 4s cubic-bezier(0.17,0.67,0.16,0.99)",
               }}
             >
-              {segments.map((s, i) => (
+              {/* Séparateurs entre les parts */}
+              {segments.map((_, i) => (
                 <div
-                  key={i}
-                  className="absolute left-1/2 top-1/2 origin-left"
-                  style={{ transform: `rotate(${i * segAngle + segAngle / 2 - 90}deg) translateX(40px)` }}
-                >
-                  <div
-                    className="flex -translate-y-1/2 flex-col items-center gap-0.5 text-center font-extrabold leading-tight"
-                    style={{
-                      width: labelWidth,
-                      fontSize: labelFontSize,
-                      overflowWrap: "break-word",
-                      textShadow: "0 1px 0 rgba(255,255,255,0.35)",
-                    }}
-                  >
-                    <span aria-hidden>{s.emoji}</span>
-                    <span>{s.short}</span>
-                  </div>
-                </div>
+                  key={`sep-${i}`}
+                  className="pointer-events-none absolute left-1/2 top-0 h-1/2 w-[4px] -translate-x-1/2 rounded-full bg-[#1a1a1a]"
+                  style={{ transformOrigin: "50% 100%", transform: `rotate(${i * segAngle}deg)` }}
+                />
               ))}
+
+              {/* Libellés, toujours lisibles à l'endroit */}
+              {segments.map((s, i) => {
+                const a = i * segAngle + segAngle / 2;
+                return (
+                  <div
+                    key={i}
+                    className="pointer-events-none absolute left-0 top-0 h-1/2 w-full"
+                    style={{ transformOrigin: "50% 100%", transform: `rotate(${a}deg)` }}
+                  >
+                    <div
+                      className="absolute left-1/2 top-[14%] flex -translate-x-1/2 flex-col items-center gap-0.5 text-center font-extrabold leading-tight"
+                      style={{
+                        width: labelWidth,
+                        fontSize: labelFontSize,
+                        transform: `translateX(-50%) rotate(${-a}deg)`,
+                        overflowWrap: "break-word",
+                        textShadow: "0 1px 0 rgba(255,255,255,0.35)",
+                      }}
+                    >
+                      <span aria-hidden>{s.emoji}</span>
+                      <span>{s.short}</span>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Ombre interne pour un rendu plus premium */}
+              <div
+                className="pointer-events-none absolute inset-0 rounded-full"
+                style={{ boxShadow: "inset 0 0 26px rgba(0,0,0,0.25)" }}
+              />
             </div>
           </div>
 
