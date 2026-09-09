@@ -624,12 +624,7 @@ function AdminPage() {
                 />
               )}
               <button
-                onClick={() =>
-                  setRewardRows((prev) => {
-                    const kept = prev.filter((_, j) => j !== i);
-                    return alwaysWin ? normalizePercents(kept) : kept;
-                  })
-                }
+                onClick={() => setRewardRows((prev) => prev.filter((_, j) => j !== i))}
                 className="ink-border min-h-[52px] rounded-full bg-white px-4 font-extrabold"
                 aria-label="Supprimer la récompense"
               >
@@ -642,11 +637,13 @@ function AdminPage() {
                   type="range"
                   min={0}
                   max={100}
-                  step={1}
+                  step={10}
                   value={r.winPercent}
                   aria-label={`% de chance ${r.name || `lot ${i + 1}`}`}
                   onChange={(e) =>
-                    setRewardRows((prev) => distribute(prev, i, Number(e.target.value)))
+                    setRewardRows((prev) =>
+                      prev.map((x, j) => (j === i ? { ...x, winPercent: Number(e.target.value) } : x)),
+                    )
                   }
                   className="w-full accent-[var(--color-green)]"
                 />
