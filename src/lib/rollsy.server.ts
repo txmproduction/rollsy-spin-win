@@ -400,7 +400,7 @@ export async function saveMerchantSetup(userId: string, input: z.infer<typeof se
   const rows = input.rewards.map((r) => ({
     merchant_id: m.id,
     name: r.name,
-    short_label: r.name.slice(0, 14),
+    short_label: r.name,
     frequency: input.frequency,
     quota: r.quota,
     win_percent: r.winPercent ?? 0,
