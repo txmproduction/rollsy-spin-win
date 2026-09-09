@@ -90,7 +90,7 @@ export default function PlayerWheel({ merchant }: { merchant: PublicMerchant }) 
     const rewardSegments = merchant.rewards.map((r, i) => ({
       rewardId: r.id,
       label: r.name,
-      short: r.short_label || r.name.slice(0, 14),
+      short: r.short_label || r.name,
       color: COLORS[i % COLORS.length]!,
       emoji: EMOJIS[i % EMOJIS.length]!,
     }));
@@ -98,6 +98,13 @@ export default function PlayerWheel({ merchant }: { merchant: PublicMerchant }) 
   }, [merchant.rewards]);
 
   const segAngle = 360 / (segments.length || 1);
+
+  // Largeur de texte disponible dans un segment (corde du cercle au rayon du libellé).
+  const labelWidth = useMemo(() => {
+    const segRad = (segAngle * Math.PI) / 180;
+    return Math.max(54, Math.min(110, Math.round(2 * 78 * Math.sin(segRad / 2))));
+  }, [segAngle]);
+  const labelFontSize = segAngle <= 36 ? 10 : segAngle <= 51.5 ? 11 : 12;
 
   const conicGradient = useMemo(() => {
     const stops = segments
