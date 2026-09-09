@@ -26,6 +26,11 @@ import {
   assertSuperAdmin,
   listAdminNotifications,
   markAdminNotificationsRead,
+  getPushPublicKey,
+  savePushSubscription,
+  removePushSubscription,
+  sendTestPush,
+  pushSubscriptionSchema,
 } from "./rollsy.server";
 
 export const fetchMerchant = createServerFn({ method: "GET" })
@@ -121,3 +126,21 @@ export const fetchAdminNotifications = createServerFn({ method: "POST" })
 export const readAdminNotifications = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => markAdminNotificationsRead(context.userId));
+
+export const fetchPushPublicKey = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async () => getPushPublicKey());
+
+export const registerPushDevice = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => pushSubscriptionSchema.parse(data))
+  .handler(async ({ context, data }) => savePushSubscription(context.userId, data));
+
+export const unregisterPushDevice = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => pushSubscriptionSchema.pick({ endpoint: true }).parse(data))
+  .handler(async ({ context, data }) => removePushSubscription(context.userId, data.endpoint));
+
+export const testPushNotification = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => sendTestPush(context.userId));

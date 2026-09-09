@@ -671,6 +671,12 @@ export async function recordAdminEvent(
   } catch (e) {
     console.error("[rollsy] admin notification failed", e);
   }
+  try {
+    await broadcastPush(title, body);
+  } catch (e) {
+    console.error("[rollsy] admin push failed", e);
+  }
+
 }
 
 export async function listAdminNotifications(userId: string): Promise<AdminNotification[]> {
@@ -699,4 +705,76 @@ export async function markAdminNotificationsRead(userId: string) {
     .update({ read_at: new Date().toISOString() })
     .is("read_at", null);
   return { ok: true as const };
+}
+
+// ---------- Notifications push (appareils) ----------
+
+export const pushSubscriptionSchema = z.object({
+  endpoint: z.string().url().max(600),
+  p256dh: z.string().min(10).max(300),
+  auth: z.string().min(5).max(200),
+});
+
+export async function getPushPublicKey() {
+  const { getVapidPublicKey } = await import("./webpush.server");
+  return { publicKey: getVapidPublicKey() };
+}
+
+export async function savePushSubscription(
+  userId: string,
+  input: z.infer<typeof pushSubscriptionSchema>,
+) {
+  await assertSuperAdmin(userId);
+  const db = await admin();
+  const { error } = await db
+    .from("push_subscriptions")
+    .upsert(
+      { user_id: userId, endpoint: input.endpoint, p256dh: input.p256dh, auth: input.auth },
+      { onConflict: "endpoint" },
+    );
+  if (error) {
+    console.error("[rollsy] push subscribe failed", error);
+    throw new Error("Impossible d'enregistrer cet appareil.");
+  }
+  return { ok: true as const };
+}
+
+export async function removePushSubscription(userId: string, endpoint: string) {
+  await assertSuperAdmin(userId);
+  const db = await admin();
+  await db.from("push_subscriptions").delete().eq("endpoint", endpoint).eq("user_id", userId);
+  return { ok: true as const };
+}
+
+export async function broadcastPush(title: string, body: string, url = "/super-admin") {
+  try {
+    const db = await admin();
+    const { data } = await db.from("push_subscriptions").select("endpoint, p256dh, auth");
+    if (!data || data.length === 0) return { sent: 0 };
+    const { sendWebPush } = await import("./webpush.server");
+    let sent = 0;
+    for (const sub of data) {
+      const res = await sendWebPush(
+        {
+          endpoint: sub.endpoint as string,
+          p256dh: sub.p256dh as string,
+          auth: sub.auth as string,
+        },
+        { title, body, url },
+      );
+      if (res.ok) sent++;
+      if (res.gone) {
+        await db.from("push_subscriptions").delete().eq("endpoint", sub.endpoint as string);
+      }
+    }
+    return { sent };
+  } catch (e) {
+    console.error("[rollsy] broadcast push failed", e);
+    return { sent: 0 };
+  }
+}
+
+export async function sendTestPush(userId: string) {
+  await assertSuperAdmin(userId);
+  return broadcastPush("Rollsy — test", "Les notifications fonctionnent sur cet appareil.");
 }
