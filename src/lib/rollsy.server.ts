@@ -44,10 +44,12 @@ export const setupSchema = z.object({
       z.object({
         name: z.string().trim().min(1).max(60),
         quota: z.number().int().min(0).max(1000),
+        winPercent: z.number().int().min(0).max(100).optional(),
       }),
     )
     .min(2)
     .max(8),
+  alwaysWin: z.boolean().optional(),
   rewardMode: z.enum(["immediate", "next_visit"]).optional(),
   logoPath: z.string().trim().max(300).nullable().optional(),
   completeOnboarding: z.boolean().optional(),
