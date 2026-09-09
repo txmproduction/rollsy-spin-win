@@ -247,7 +247,7 @@ function AdminPage() {
 
   async function toggleAlwaysWin(next: boolean) {
     setAlwaysWin(next);
-    if (next) setRewardRows((prev) => normalizePercents(prev));
+    if (next) setRewardRows((prev) => evenSplit(prev));
     setAlwaysWinMsg(null);
 
     try {
@@ -298,7 +298,7 @@ function AdminPage() {
       winPercent: Number((r as { win_percent?: number | null }).win_percent ?? 0),
     }));
     const aw = data.merchant.always_win === true;
-    setRewardRows(aw ? normalizePercents(rows) : rows);
+    setRewardRows(rows);
     setAlwaysWin(aw);
     setLogoPath(null);
     setLogoPreview(data.logoUrl ?? null);
@@ -313,8 +313,12 @@ function AdminPage() {
   async function saveConfig() {
     setBusy(true);
     setSavedMsg(null);
-    const rowsToSave = alwaysWin ? normalizePercents(rewardRows) : rewardRows;
-    if (alwaysWin) setRewardRows(rowsToSave);
+    if (alwaysWin && !percentOk) {
+      setSavedMsg("Le total des pourcentages doit être égal à 100%.");
+      setBusy(false);
+      return;
+    }
+    const rowsToSave = rewardRows;
     try {
       await saveWheelSetup({
         data: {
