@@ -276,13 +276,29 @@ function AdminPage() {
     setGoalUrl(data.merchant.goal_url ?? "");
     setFrequency((data.rewards[0]?.frequency as "day" | "week") ?? "week");
     setRewardMode(data.merchant.reward_mode === "next_visit" ? "next_visit" : "immediate");
-    setRewardRows(data.rewards.map((r) => ({ name: r.name, quota: r.quota })));
+    setRewardRows(
+      data.rewards.map((r) => ({
+        name: r.name,
+        quota: r.quota,
+        winPercent: Number((r as { win_percent?: number | null }).win_percent ?? 0),
+      })),
+    );
     setAlwaysWin(data.merchant.always_win === true);
     setLogoPath(null);
     setLogoPreview(data.logoUrl ?? null);
   }, [data]);
 
+  const percentTotal = useMemo(
+    () => rewardRows.reduce((a, r) => a + (Number(r.winPercent) || 0), 0),
+    [rewardRows],
+  );
+  const percentOk = percentTotal === 100;
+
   async function saveConfig() {
+    if (alwaysWin && !percentOk) {
+      setSavedMsg("Le total des pourcentages doit être exactement 100%.");
+      return;
+    }
     setBusy(true);
     setSavedMsg(null);
     try {
@@ -292,7 +308,12 @@ function AdminPage() {
           goalUrl: goalUrl.trim(),
           frequency,
           rewardMode,
-          rewards: rewardRows.map((r) => ({ name: r.name.trim(), quota: Number(r.quota) || 1 })),
+          rewards: rewardRows.map((r) => ({
+            name: r.name.trim(),
+            quota: Number(r.quota) || 1,
+            winPercent: Math.max(0, Math.min(100, Math.round(Number(r.winPercent) || 0))),
+          })),
+          alwaysWin,
           ...(logoPath ? { logoPath } : {}),
           completeOnboarding: true,
         },
