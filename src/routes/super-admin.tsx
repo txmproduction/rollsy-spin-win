@@ -49,17 +49,28 @@ function SuperAdminPage() {
     }
   }, [navigate]);
 
-  useEffect(() => {
-    void (async () => {
-      const { data: s } = await supabase.auth.getSession();
+  const boot = useCallback(async () => {
+    try {
+      const { data: s } = await withTimeout(supabase.auth.getSession());
       if (!s.session) {
         navigate({ to: "/admin", replace: true });
         return;
       }
       await load();
+    } catch {
+      /* réseau indisponible */
+    } finally {
       setBooting(false);
-    })();
+    }
   }, [load, navigate]);
+
+  useEffect(() => {
+    void boot();
+  }, [boot]);
+
+  useAppResume(() => {
+    void load();
+  });
 
   async function changeStatus(row: Row, status: "trial" | "active" | "suspended") {
     setSavingId(row.id);
