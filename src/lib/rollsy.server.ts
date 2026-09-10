@@ -144,7 +144,7 @@ export async function getPublicMerchant(slug: string): Promise<PublicMerchant | 
   const db = await admin();
   const { data: m } = await db
     .from("merchants")
-    .select("id, slug, company_name, goal_type, goal_url, reward_mode, logo_path, access_status, trial_ends_at")
+    .select("id, slug, company_name, goal_type, goal_url, reward_mode, always_win, logo_path, access_status, trial_ends_at")
     .eq("slug", slug)
     .maybeSingle();
   if (!m) return null;
