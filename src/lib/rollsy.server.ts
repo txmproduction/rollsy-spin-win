@@ -126,6 +126,7 @@ export type PublicMerchant = {
   goalUrl: string | null;
   goalLabel: string;
   rewardMode: "immediate" | "next_visit";
+  alwaysWin: boolean;
   logoUrl: string | null;
   rewards: { id: string; name: string; short_label: string | null }[];
 };
@@ -143,11 +144,11 @@ export async function getPublicMerchant(slug: string): Promise<PublicMerchant | 
   const db = await admin();
   const { data: m } = await db
     .from("merchants")
-    .select("id, slug, company_name, goal_type, goal_url, reward_mode, logo_path, access_status, trial_ends_at")
+    .select("id, slug, company_name, goal_type, goal_url, reward_mode, always_win, logo_path, access_status, trial_ends_at")
     .eq("slug", slug)
     .maybeSingle();
   if (!m) return null;
-  if (computeAccess(m as Record<string, string | null>).blocked) return null;
+  if (computeAccess(m as unknown as Record<string, string | null>).blocked) return null;
   const { data: rewards } = await db
     .from("rewards")
     .select("id, name, short_label")
@@ -162,6 +163,7 @@ export async function getPublicMerchant(slug: string): Promise<PublicMerchant | 
     goalUrl: (m.goal_url as string) ?? null,
     goalLabel: goalLabel(m.goal_type as string),
     rewardMode: (m.reward_mode as string) === "next_visit" ? "next_visit" : "immediate",
+    alwaysWin: (m as { always_win?: boolean }).always_win === true,
     logoUrl: await signedLogoUrl(m.logo_path as string | null),
     rewards: (rewards ?? []) as PublicMerchant["rewards"],
   };

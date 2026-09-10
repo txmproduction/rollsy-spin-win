@@ -183,8 +183,9 @@ export default function PlayerWheel({ merchant }: { merchant: PublicMerchant }) 
       color: COLORS[i % COLORS.length]!,
       emoji: emojiFor(`${r.name} ${r.short_label ?? ""}`, i),
     }));
+    if (merchant.alwaysWin) return rewardSegments;
     return [...rewardSegments, LOSE_SEGMENT];
-  }, [merchant.rewards]);
+  }, [merchant.rewards, merchant.alwaysWin]);
 
   const segAngle = 360 / (segments.length || 1);
 
