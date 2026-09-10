@@ -9,7 +9,6 @@ import {
   resetRollsyData,
   saveWheelSetup,
   completeSignup,
-  markSpinCodeUsed,
   checkCode,
   validateCode,
   amISuperAdmin,
@@ -269,7 +268,7 @@ function AdminPage() {
   const [codeInput, setCodeInput] = useState("");
   const [codeResult, setCodeResult] = useState<CodeCheck | null>(null);
   const [codeBusy, setCodeBusy] = useState(false);
-  const [codeFilter, setCodeFilter] = useState<"all" | "valid" | "used" | "expired">("all");
+  
 
   async function toggleAlwaysWin(next: boolean) {
     setAlwaysWin(next);
@@ -371,47 +370,8 @@ function AdminPage() {
     setBusy(false);
   }
 
-  const codeSpins = useMemo(() => {
-    const now = Date.now();
-    return (data?.spins ?? [])
-      .filter((s) => s.result === "win" && s.code)
-      .map((s) => {
-        const expiresAt =
-          (s as { code_expires_at?: string | null }).code_expires_at ??
-          new Date(new Date(s.created_at).getTime() + 7 * 86400000).toISOString();
-        const used = s.code_used === true;
-        const status: "valid" | "used" | "expired" = used
-          ? "used"
-          : new Date(expiresAt).getTime() < now
-            ? "expired"
-            : "valid";
-        return {
-          id: s.id,
-          code: s.code as string,
-          rewardId: s.reward_id,
-          createdAt: s.created_at,
-          expiresAt,
-          usedAt: (s as { code_used_at?: string | null }).code_used_at ?? null,
-          used,
-          status,
-        };
-      });
-  }, [data]);
 
-  const filteredCodeSpins = useMemo(
-    () => (codeFilter === "all" ? codeSpins : codeSpins.filter((c) => c.status === codeFilter)),
-    [codeSpins, codeFilter],
-  );
 
-  const codeCounts = useMemo(
-    () => ({
-      all: codeSpins.length,
-      valid: codeSpins.filter((c) => c.status === "valid").length,
-      used: codeSpins.filter((c) => c.status === "used").length,
-      expired: codeSpins.filter((c) => c.status === "expired").length,
-    }),
-    [codeSpins],
-  );
 
   async function handleCheckCode(e: React.FormEvent) {
     e.preventDefault();
@@ -437,15 +397,8 @@ function AdminPage() {
     }
   }
 
-  async function toggleCode(spinId: string, used: boolean) {
-    setBusy(true);
-    try {
-      await markSpinCodeUsed({ data: { spinId, used } });
-      await load();
-    } finally {
-      setBusy(false);
-    }
-  }
+
+
 
   async function handleReset() {
     if (!confirm("Supprimer tous les tours et clients de votre compte ? Action irréversible.")) return;
@@ -826,8 +779,8 @@ function AdminPage() {
       </Card>
 
       {rewardMode === "next_visit" && (
-      <>
       <Card title="Vérifier un code">
+
         <p className="mb-3 font-bold text-ink/80">
           Saisissez le code présenté par votre client pour savoir s'il est valide, déjà utilisé ou
           expiré. Chaque code est valable 7 jours après le gain.
@@ -886,75 +839,16 @@ function AdminPage() {
             )}
           </div>
         )}
-      </Card>
 
-      <Card title={`Codes de récompense (${codeCounts.all})`}>
-        <div className="mb-4 flex flex-wrap gap-2">
-          {(
-            [
-              ["all", "Tous"],
-              ["valid", "En attente"],
-              ["used", "Utilisés"],
-              ["expired", "Expirés"],
-            ] as const
-          ).map(([value, label]) => (
-            <button
-              key={value}
-              onClick={() => setCodeFilter(value)}
-              className={`ink-border min-h-[44px] rounded-full px-4 text-sm font-extrabold ${
-                codeFilter === value ? "bg-ink text-white" : "bg-white"
-              }`}
-            >
-              {label} ({codeCounts[value]})
-            </button>
-          ))}
-        </div>
-        {filteredCodeSpins.length === 0 ? (
-          <p className="text-sm font-bold text-ink/70">Aucun code dans cette catégorie.</p>
-        ) : (
-          <div className="max-h-96 space-y-2 overflow-y-auto">
-            {filteredCodeSpins.map((sp) => {
-              const reward = data.rewards.find((r) => r.id === sp.rewardId);
-              return (
-                <div
-                  key={sp.id}
-                  className="ink-border flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-white px-4 py-3"
-                >
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-extrabold tracking-widest">{sp.code}</p>
-                      <span
-                        className={`ink-border rounded-full px-2 py-0.5 text-[10px] font-extrabold ${
-                          CODE_STATUS_CLASS[sp.status] ?? "bg-white"
-                        }`}
-                      >
-                        {CODE_STATUS_LABEL[sp.status]}
-                      </span>
-                    </div>
-                    <p className="text-xs font-bold text-ink/60">
-                      {reward?.name ?? "Lot"} · gagné le {fmtDate(sp.createdAt)}
-                      {sp.used
-                        ? ` · utilisé le ${fmtDate(sp.usedAt)}`
-                        : ` · expire le ${fmtDate(sp.expiresAt)}`}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => toggleCode(sp.id, !sp.used)}
-                    disabled={busy}
-                    className={`ink-border min-h-[44px] rounded-full px-4 text-sm font-extrabold uppercase disabled:opacity-50 ${
-                      sp.used ? "bg-white text-ink/60" : "bg-green text-white"
-                    }`}
-                  >
-                    {sp.used ? "Annuler" : "Valider ✓"}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        )}
+        <Link
+          to="/codes"
+          className="ink-border mt-4 inline-flex min-h-[48px] items-center rounded-full bg-white px-5 font-extrabold underline"
+        >
+          Voir tous les codes et participants →
+        </Link>
       </Card>
-      </>
       )}
+
 
       <Card title={`Clients (${data.clients.length})`}>
         <div className="mb-4 flex flex-wrap gap-3">
