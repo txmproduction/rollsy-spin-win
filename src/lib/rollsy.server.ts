@@ -283,17 +283,36 @@ export async function decideAndRecordSpin(slug: string, clientId: string | null)
 
 
 
-  const code = wonId && rewardMode === "next_visit" ? generateCode() : null;
+  // Chaque gain reçoit un code unique enregistré en base, valable 7 jours.
+  let code: string | null = null;
+  let expiresAt: string | null = null;
+  if (wonId) {
+    expiresAt = new Date(Date.now() + CODE_VALIDITY_DAYS * 86400000).toISOString();
+    for (let attempt = 0; attempt < 6; attempt++) {
+      const candidate = generateCode();
+      const { data: clash } = await db
+        .from("spins")
+        .select("id")
+        .eq("code", candidate)
+        .maybeSingle();
+      if (!clash) {
+        code = candidate;
+        break;
+      }
+    }
+  }
+
   const { error } = await db.from("spins").insert({
     merchant_id: merchantId,
     client_id: clientId,
     reward_id: wonId,
     result: wonId ? "win" : "lose",
     code,
+    code_expires_at: expiresAt,
   });
   if (error) console.error("[rollsy] spin insert failed", error);
 
-  return { rewardId: wonId, code, rewardMode };
+  return { rewardId: wonId, code, rewardMode, codeExpiresAt: expiresAt };
 }
 
 // ---------- Espace commerçant (authentifié) ----------
