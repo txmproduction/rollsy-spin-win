@@ -144,31 +144,45 @@ function AdminPage() {
 
   const load = useCallback(async () => {
     try {
-      await completeSignup({ data: {} });
-      const d = await getMerchantAdminData();
+      await withTimeout(completeSignup({ data: {} }));
+      const d = await withTimeout(getMerchantAdminData());
       setData(d);
+      setLoadFailed(false);
       try {
-        setIsSuper((await amISuperAdmin()).superAdmin);
+        setIsSuper((await withTimeout(amISuperAdmin())).superAdmin);
       } catch {
         setIsSuper(false);
       }
       if (!d.merchant.onboarding_completed) navigate({ to: "/onboarding" });
     } catch {
       setData(null);
+      setLoadFailed(true);
     }
   }, [navigate]);
 
-  useEffect(() => {
-    const run = async () => {
-      const { data: s } = await supabase.auth.getSession();
+  const boot = useCallback(async () => {
+    setLoadFailed(false);
+    try {
+      const { data: s } = await withTimeout(supabase.auth.getSession());
       if (s.session) {
         setSignedIn(true);
         await load();
       }
+    } catch {
+      setLoadFailed(true);
+    } finally {
       setBooting(false);
-    };
-    void run();
+    }
   }, [load]);
+
+  useEffect(() => {
+    void boot();
+  }, [boot]);
+
+  // Retour d'arrière-plan : si l'écran est resté vide, on relance le chargement.
+  useAppResume(() => {
+    if (!dataRef.current) void boot();
+  });
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
