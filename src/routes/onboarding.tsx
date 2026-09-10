@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { withTimeout } from "@/lib/resilience";
 import { supabase } from "@/integrations/supabase/client";
 import { AccessGate } from "@/components/AccessGate";
 import { completeSignup, saveWheelSetup } from "@/lib/rollsy.functions";
