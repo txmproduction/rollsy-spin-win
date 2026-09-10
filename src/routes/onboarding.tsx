@@ -97,15 +97,19 @@ function OnboardingPage() {
 
   useEffect(() => {
     const run = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!data.session) {
-        navigate({ to: "/admin" });
-        return;
+      try {
+        const { data } = await withTimeout(supabase.auth.getSession());
+        if (!data.session) {
+          navigate({ to: "/admin" });
+          return;
+        }
+      } catch {
+        /* réseau lent : on laisse l'écran s'afficher */
       }
       try {
-        await completeSignup({ data: {} });
+        await withTimeout(completeSignup({ data: {} }));
       } catch {
-        /* déjà créé */
+        /* déjà créé ou réseau indisponible */
       }
       setReady(true);
     };
