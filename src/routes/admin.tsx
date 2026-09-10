@@ -482,7 +482,19 @@ function AdminPage() {
   if (!data) {
     return (
       <main className="mx-auto max-w-md px-4 py-20 text-center font-bold">
-        Chargement de votre espace...
+        {loadFailed ? (
+          <>
+            <p className="mb-4">Connexion interrompue. Vérifiez votre réseau.</p>
+            <button
+              onClick={() => void boot()}
+              className="ink-border rounded-full bg-yellow px-6 py-3 font-extrabold"
+            >
+              Réessayer
+            </button>
+          </>
+        ) : (
+          "Chargement de votre espace..."
+        )}
       </main>
     );
   }
