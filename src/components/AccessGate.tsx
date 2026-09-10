@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { getMyAccessState } from "@/lib/rollsy.functions";
+import { withTimeout } from "@/lib/resilience";
 
 export const WHATSAPP_NUMBER = "33695449963";
 
