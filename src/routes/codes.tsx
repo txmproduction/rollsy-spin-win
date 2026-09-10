@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { withTimeout, useAppResume } from "@/lib/resilience";
 import { AccessGate } from "@/components/AccessGate";
 import { getMerchantAdminData, markSpinCodeUsed } from "@/lib/rollsy.functions";
 
