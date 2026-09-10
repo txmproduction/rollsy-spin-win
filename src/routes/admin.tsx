@@ -10,9 +10,31 @@ import {
   saveWheelSetup,
   completeSignup,
   markSpinCodeUsed,
+  checkCode,
+  validateCode,
   amISuperAdmin,
   setAlwaysWinMode,
 } from "@/lib/rollsy.functions";
+
+type CodeCheck = Awaited<ReturnType<typeof checkCode>>;
+
+const CODE_STATUS_LABEL: Record<string, string> = {
+  valid: "Valide ✅",
+  used: "Déjà utilisé ❌",
+  expired: "Expiré ⏳",
+  unknown: "Code inconnu ❓",
+};
+
+const CODE_STATUS_CLASS: Record<string, string> = {
+  valid: "bg-green text-white",
+  used: "bg-orange/30 text-ink",
+  expired: "bg-yellow/40 text-ink",
+  unknown: "bg-red-500 text-white",
+};
+
+function fmtDate(v: string | null) {
+  return v ? new Date(v).toLocaleString("fr-FR") : "—";
+}
 
 type RewardRow = { name: string; quota: number; winPercent: number };
 
@@ -349,10 +371,71 @@ function AdminPage() {
     setBusy(false);
   }
 
-  const codeSpins = useMemo(
-    () => (data?.spins ?? []).filter((s) => s.result === "win" && s.code),
-    [data],
+  const codeSpins = useMemo(() => {
+    const now = Date.now();
+    return (data?.spins ?? [])
+      .filter((s) => s.result === "win" && s.code)
+      .map((s) => {
+        const expiresAt =
+          (s as { code_expires_at?: string | null }).code_expires_at ??
+          new Date(new Date(s.created_at).getTime() + 7 * 86400000).toISOString();
+        const used = s.code_used === true;
+        const status: "valid" | "used" | "expired" = used
+          ? "used"
+          : new Date(expiresAt).getTime() < now
+            ? "expired"
+            : "valid";
+        return {
+          id: s.id,
+          code: s.code as string,
+          rewardId: s.reward_id,
+          createdAt: s.created_at,
+          expiresAt,
+          usedAt: (s as { code_used_at?: string | null }).code_used_at ?? null,
+          used,
+          status,
+        };
+      });
+  }, [data]);
+
+  const filteredCodeSpins = useMemo(
+    () => (codeFilter === "all" ? codeSpins : codeSpins.filter((c) => c.status === codeFilter)),
+    [codeSpins, codeFilter],
   );
+
+  const codeCounts = useMemo(
+    () => ({
+      all: codeSpins.length,
+      valid: codeSpins.filter((c) => c.status === "valid").length,
+      used: codeSpins.filter((c) => c.status === "used").length,
+      expired: codeSpins.filter((c) => c.status === "expired").length,
+    }),
+    [codeSpins],
+  );
+
+  async function handleCheckCode(e: React.FormEvent) {
+    e.preventDefault();
+    if (!codeInput.trim()) return;
+    setCodeBusy(true);
+    try {
+      setCodeResult(await checkCode({ data: { code: codeInput } }));
+    } catch {
+      setCodeResult(null);
+    } finally {
+      setCodeBusy(false);
+    }
+  }
+
+  async function handleValidateCode() {
+    if (!codeResult || codeResult.status !== "valid") return;
+    setCodeBusy(true);
+    try {
+      setCodeResult(await validateCode({ data: { code: codeResult.code } }));
+      await load();
+    } finally {
+      setCodeBusy(false);
+    }
+  }
 
   async function toggleCode(spinId: string, used: boolean) {
     setBusy(true);
