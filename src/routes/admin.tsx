@@ -886,75 +886,16 @@ function AdminPage() {
             )}
           </div>
         )}
-      </Card>
 
-      <Card title={`Codes de récompense (${codeCounts.all})`}>
-        <div className="mb-4 flex flex-wrap gap-2">
-          {(
-            [
-              ["all", "Tous"],
-              ["valid", "En attente"],
-              ["used", "Utilisés"],
-              ["expired", "Expirés"],
-            ] as const
-          ).map(([value, label]) => (
-            <button
-              key={value}
-              onClick={() => setCodeFilter(value)}
-              className={`ink-border min-h-[44px] rounded-full px-4 text-sm font-extrabold ${
-                codeFilter === value ? "bg-ink text-white" : "bg-white"
-              }`}
-            >
-              {label} ({codeCounts[value]})
-            </button>
-          ))}
-        </div>
-        {filteredCodeSpins.length === 0 ? (
-          <p className="text-sm font-bold text-ink/70">Aucun code dans cette catégorie.</p>
-        ) : (
-          <div className="max-h-96 space-y-2 overflow-y-auto">
-            {filteredCodeSpins.map((sp) => {
-              const reward = data.rewards.find((r) => r.id === sp.rewardId);
-              return (
-                <div
-                  key={sp.id}
-                  className="ink-border flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-white px-4 py-3"
-                >
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-extrabold tracking-widest">{sp.code}</p>
-                      <span
-                        className={`ink-border rounded-full px-2 py-0.5 text-[10px] font-extrabold ${
-                          CODE_STATUS_CLASS[sp.status] ?? "bg-white"
-                        }`}
-                      >
-                        {CODE_STATUS_LABEL[sp.status]}
-                      </span>
-                    </div>
-                    <p className="text-xs font-bold text-ink/60">
-                      {reward?.name ?? "Lot"} · gagné le {fmtDate(sp.createdAt)}
-                      {sp.used
-                        ? ` · utilisé le ${fmtDate(sp.usedAt)}`
-                        : ` · expire le ${fmtDate(sp.expiresAt)}`}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => toggleCode(sp.id, !sp.used)}
-                    disabled={busy}
-                    className={`ink-border min-h-[44px] rounded-full px-4 text-sm font-extrabold uppercase disabled:opacity-50 ${
-                      sp.used ? "bg-white text-ink/60" : "bg-green text-white"
-                    }`}
-                  >
-                    {sp.used ? "Annuler" : "Valider ✓"}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        )}
+        <Link
+          to="/codes"
+          className="ink-border mt-4 inline-flex min-h-[48px] items-center rounded-full bg-white px-5 font-extrabold underline"
+        >
+          Voir tous les codes et participants →
+        </Link>
       </Card>
-      </>
       )}
+
 
       <Card title={`Clients (${data.clients.length})`}>
         <div className="mb-4 flex flex-wrap gap-3">

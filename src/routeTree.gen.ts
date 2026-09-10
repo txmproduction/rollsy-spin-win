@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AccesSuspenduRouteImport } from './routes/acces-suspendu'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as CgvRouteImport } from './routes/cgv'
+import { Route as CodesRouteImport } from './routes/codes'
 import { Route as ConfidentialiteRouteImport } from './routes/confidentialite'
 import { Route as ConfirmationRouteImport } from './routes/confirmation'
 import { Route as InscriptionRouteImport } from './routes/inscription'
@@ -45,6 +46,11 @@ const AdminRoute = AdminRouteImport.update({
 const CgvRoute = CgvRouteImport.update({
   id: '/cgv',
   path: '/cgv',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CodesRoute = CodesRouteImport.update({
+  id: '/codes',
+  path: '/codes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ConfidentialiteRoute = ConfidentialiteRouteImport.update({
@@ -119,6 +125,7 @@ export interface FileRoutesByFullPath {
   '/acces-suspendu': typeof AccesSuspenduRoute
   '/admin': typeof AdminRoute
   '/cgv': typeof CgvRoute
+  '/codes': typeof CodesRoute
   '/confidentialite': typeof ConfidentialiteRoute
   '/confirmation': typeof ConfirmationRoute
   '/inscription': typeof InscriptionRoute
@@ -138,6 +145,7 @@ export interface FileRoutesByTo {
   '/acces-suspendu': typeof AccesSuspenduRoute
   '/admin': typeof AdminRoute
   '/cgv': typeof CgvRoute
+  '/codes': typeof CodesRoute
   '/confidentialite': typeof ConfidentialiteRoute
   '/confirmation': typeof ConfirmationRoute
   '/inscription': typeof InscriptionRoute
@@ -158,6 +166,7 @@ export interface FileRoutesById {
   '/acces-suspendu': typeof AccesSuspenduRoute
   '/admin': typeof AdminRoute
   '/cgv': typeof CgvRoute
+  '/codes': typeof CodesRoute
   '/confidentialite': typeof ConfidentialiteRoute
   '/confirmation': typeof ConfirmationRoute
   '/inscription': typeof InscriptionRoute
@@ -179,6 +188,7 @@ export interface FileRouteTypes {
     | '/acces-suspendu'
     | '/admin'
     | '/cgv'
+    | '/codes'
     | '/confidentialite'
     | '/confirmation'
     | '/inscription'
@@ -198,6 +208,7 @@ export interface FileRouteTypes {
     | '/acces-suspendu'
     | '/admin'
     | '/cgv'
+    | '/codes'
     | '/confidentialite'
     | '/confirmation'
     | '/inscription'
@@ -217,6 +228,7 @@ export interface FileRouteTypes {
     | '/acces-suspendu'
     | '/admin'
     | '/cgv'
+    | '/codes'
     | '/confidentialite'
     | '/confirmation'
     | '/inscription'
@@ -237,6 +249,7 @@ export interface RootRouteChildren {
   AccesSuspenduRoute: typeof AccesSuspenduRoute
   AdminRoute: typeof AdminRoute
   CgvRoute: typeof CgvRoute
+  CodesRoute: typeof CodesRoute
   ConfidentialiteRoute: typeof ConfidentialiteRoute
   ConfirmationRoute: typeof ConfirmationRoute
   InscriptionRoute: typeof InscriptionRoute
@@ -280,6 +293,13 @@ declare module '@tanstack/react-router' {
       path: '/cgv'
       fullPath: '/cgv'
       preLoaderRoute: typeof CgvRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/codes': {
+      id: '/codes'
+      path: '/codes'
+      fullPath: '/codes'
+      preLoaderRoute: typeof CodesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/confidentialite': {
@@ -381,6 +401,7 @@ const rootRouteChildren: RootRouteChildren = {
   AccesSuspenduRoute: AccesSuspenduRoute,
   AdminRoute: AdminRoute,
   CgvRoute: CgvRoute,
+  CodesRoute: CodesRoute,
   ConfidentialiteRoute: ConfidentialiteRoute,
   ConfirmationRoute: ConfirmationRoute,
   InscriptionRoute: InscriptionRoute,
