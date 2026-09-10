@@ -825,6 +825,8 @@ function AdminPage() {
         {alwaysWinMsg && <p className="mt-3 text-sm font-extrabold">{alwaysWinMsg}</p>}
       </Card>
 
+      {rewardMode === "next_visit" && (
+      <>
       <Card title="Vérifier un code">
         <p className="mb-3 font-bold text-ink/80">
           Saisissez le code présenté par votre client pour savoir s'il est valide, déjà utilisé ou
