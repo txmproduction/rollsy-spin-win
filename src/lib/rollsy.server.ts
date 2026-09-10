@@ -497,7 +497,7 @@ export async function setSpinCodeUsed(userId: string, spinId: string, used: bool
   const db = await admin();
   const { error } = await db
     .from("spins")
-    .update({ code_used: used })
+    .update({ code_used: used, code_used_at: used ? new Date().toISOString() : null })
     .eq("id", spinId)
     .eq("merchant_id", m.id);
   if (error) {
@@ -505,6 +505,109 @@ export async function setSpinCodeUsed(userId: string, spinId: string, used: bool
     throw new Error("Impossible de mettre à jour ce code.");
   }
   return { ok: true as const };
+}
+
+// ---------- Vérification / validation des codes ----------
+
+export type CodeStatus = "valid" | "used" | "expired" | "unknown";
+
+export type CodeCheckResult = {
+  status: CodeStatus;
+  code: string;
+  spinId: string | null;
+  rewardName: string | null;
+  clientName: string | null;
+  wonAt: string | null;
+  expiresAt: string | null;
+  usedAt: string | null;
+};
+
+function normalizeCode(raw: string) {
+  const clean = raw.trim().toUpperCase().replace(/\s+/g, "");
+  return clean.startsWith("TXM-") || !/^[A-Z0-9]+$/.test(clean) ? clean : `TXM-${clean}`;
+}
+
+async function findCodeRow(merchantId: string, code: string) {
+  const db = await admin();
+  const { data } = await db
+    .from("spins")
+    .select("id, code, code_used, code_used_at, code_expires_at, created_at, reward_id, client_id")
+    .eq("merchant_id", merchantId)
+    .eq("code", code)
+    .maybeSingle();
+  return data ?? null;
+}
+
+async function describeCodeRow(
+  row: NonNullable<Awaited<ReturnType<typeof findCodeRow>>>,
+  code: string,
+): Promise<CodeCheckResult> {
+  const db = await admin();
+  const [reward, client] = await Promise.all([
+    row.reward_id
+      ? db.from("rewards").select("name").eq("id", row.reward_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    row.client_id
+      ? db.from("clients").select("name").eq("id", row.client_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
+  const expiresAt =
+    (row.code_expires_at as string | null) ??
+    new Date(new Date(row.created_at as string).getTime() + CODE_VALIDITY_DAYS * 86400000).toISOString();
+  const used = row.code_used === true;
+  const expired = !used && new Date(expiresAt).getTime() < Date.now();
+  return {
+    status: used ? "used" : expired ? "expired" : "valid",
+    code,
+    spinId: row.id as string,
+    rewardName: (reward.data as { name?: string } | null)?.name ?? null,
+    clientName: (client.data as { name?: string } | null)?.name ?? null,
+    wonAt: row.created_at as string,
+    expiresAt,
+    usedAt: (row.code_used_at as string | null) ?? null,
+  };
+}
+
+const UNKNOWN_CODE = (code: string): CodeCheckResult => ({
+  status: "unknown",
+  code,
+  spinId: null,
+  rewardName: null,
+  clientName: null,
+  wonAt: null,
+  expiresAt: null,
+  usedAt: null,
+});
+
+export async function checkRewardCode(userId: string, rawCode: string): Promise<CodeCheckResult> {
+  const m = await requireMerchant(userId);
+  const code = normalizeCode(rawCode);
+  const row = await findCodeRow(m.id as string, code);
+  if (!row) return UNKNOWN_CODE(code);
+  return describeCodeRow(row, code);
+}
+
+export async function validateRewardCode(userId: string, rawCode: string): Promise<CodeCheckResult> {
+  const m = await requireMerchant(userId);
+  const code = normalizeCode(rawCode);
+  const row = await findCodeRow(m.id as string, code);
+  if (!row) return UNKNOWN_CODE(code);
+  const current = await describeCodeRow(row, code);
+  if (current.status !== "valid") return current;
+
+  const db = await admin();
+  const usedAt = new Date().toISOString();
+  const { error } = await db
+    .from("spins")
+    .update({ code_used: true, code_used_at: usedAt })
+    .eq("id", row.id)
+    .eq("merchant_id", m.id)
+    .eq("code_used", false);
+  if (error) {
+    console.error("[rollsy] validate code failed", error);
+    throw new Error("Impossible de valider ce code.");
+  }
+  return { ...current, status: "used", usedAt };
 }
 
 export async function resetMerchantData(userId: string) {
