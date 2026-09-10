@@ -720,6 +720,7 @@ export type SuperAdminRow = {
   id: string;
   companyName: string;
   email: string;
+  phone: string | null;
   slug: string;
   createdAt: string;
   participants: number;
@@ -734,7 +735,7 @@ export async function listAllMerchants(userId: string): Promise<SuperAdminRow[]>
   const db = await admin();
   const { data: merchants } = await db
     .from("merchants")
-    .select("id, company_name, email, slug, created_at, access_status, trial_ends_at")
+    .select("id, company_name, email, phone, slug, created_at, access_status, trial_ends_at")
     .order("created_at", { ascending: false });
 
   const rows: SuperAdminRow[] = [];
@@ -753,6 +754,7 @@ export async function listAllMerchants(userId: string): Promise<SuperAdminRow[]>
       id,
       companyName: (m.company_name as string) ?? "—",
       email: (m.email as string) ?? "",
+      phone: ((m as { phone?: string | null }).phone ?? null) || null,
       slug: (m.slug as string) ?? "",
       createdAt: m.created_at as string,
       participants: participants ?? 0,
