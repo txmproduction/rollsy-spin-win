@@ -111,6 +111,15 @@ function SuperAdminPage() {
               <div>
                 <h2 className="font-display text-xl font-extrabold">{row.companyName}</h2>
                 <p className="text-sm font-bold text-ink/60">{row.email}</p>
+                <p className="text-sm font-bold text-ink/60">
+                  {row.phone ? (
+                    <a href={`tel:${row.phone.replace(/[^+\d]/g, "")}`} className="underline">
+                      {row.phone}
+                    </a>
+                  ) : (
+                    "Numéro non renseigné"
+                  )}
+                </p>
               </div>
               <span
                 className={`ink-border rounded-full px-3 py-1 text-sm font-extrabold ${statusClass(row.accessStatus)}`}
