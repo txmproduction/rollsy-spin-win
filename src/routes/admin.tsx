@@ -826,8 +826,8 @@ function AdminPage() {
       </Card>
 
       {rewardMode === "next_visit" && (
-      <>
       <Card title="Vérifier un code">
+
         <p className="mb-3 font-bold text-ink/80">
           Saisissez le code présenté par votre client pour savoir s'il est valide, déjà utilisé ou
           expiré. Chaque code est valable 7 jours après le gain.
