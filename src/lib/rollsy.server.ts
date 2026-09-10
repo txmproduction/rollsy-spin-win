@@ -148,7 +148,7 @@ export async function getPublicMerchant(slug: string): Promise<PublicMerchant | 
     .eq("slug", slug)
     .maybeSingle();
   if (!m) return null;
-  if (computeAccess(m as Record<string, string | null>).blocked) return null;
+  if (computeAccess(m as unknown as Record<string, string | null>).blocked) return null;
   const { data: rewards } = await db
     .from("rewards")
     .select("id, name, short_label")
