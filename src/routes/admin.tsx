@@ -244,6 +244,10 @@ function AdminPage() {
   const [uploading, setUploading] = useState(false);
   const [alwaysWin, setAlwaysWin] = useState(false);
   const [alwaysWinMsg, setAlwaysWinMsg] = useState<string | null>(null);
+  const [codeInput, setCodeInput] = useState("");
+  const [codeResult, setCodeResult] = useState<CodeCheck | null>(null);
+  const [codeBusy, setCodeBusy] = useState(false);
+  const [codeFilter, setCodeFilter] = useState<"all" | "valid" | "used" | "expired">("all");
 
   async function toggleAlwaysWin(next: boolean) {
     setAlwaysWin(next);
