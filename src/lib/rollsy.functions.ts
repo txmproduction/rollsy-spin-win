@@ -17,6 +17,9 @@ import {
   loadMerchantAdminData,
   resetMerchantData,
   setSpinCodeUsed,
+  checkRewardCode,
+  validateRewardCode,
+  codeLookupSchema,
   setMerchantAlwaysWin,
   alwaysWinSchema,
   getAccessStateForUser,
@@ -77,6 +80,16 @@ export const markSpinCodeUsed = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => codeSchema.parse(data))
   .handler(async ({ context, data }) => setSpinCodeUsed(context.userId, data.spinId, data.used));
+
+export const checkCode = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => codeLookupSchema.parse(data))
+  .handler(async ({ context, data }) => checkRewardCode(context.userId, data.code));
+
+export const validateCode = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => codeLookupSchema.parse(data))
+  .handler(async ({ context, data }) => validateRewardCode(context.userId, data.code));
 
 export const setAlwaysWinMode = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

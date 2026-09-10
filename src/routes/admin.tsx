@@ -10,9 +10,31 @@ import {
   saveWheelSetup,
   completeSignup,
   markSpinCodeUsed,
+  checkCode,
+  validateCode,
   amISuperAdmin,
   setAlwaysWinMode,
 } from "@/lib/rollsy.functions";
+
+type CodeCheck = Awaited<ReturnType<typeof checkCode>>;
+
+const CODE_STATUS_LABEL: Record<string, string> = {
+  valid: "Valide ✅",
+  used: "Déjà utilisé ❌",
+  expired: "Expiré ⏳",
+  unknown: "Code inconnu ❓",
+};
+
+const CODE_STATUS_CLASS: Record<string, string> = {
+  valid: "bg-green text-white",
+  used: "bg-orange/30 text-ink",
+  expired: "bg-yellow/40 text-ink",
+  unknown: "bg-red-500 text-white",
+};
+
+function fmtDate(v: string | null) {
+  return v ? new Date(v).toLocaleString("fr-FR") : "—";
+}
 
 type RewardRow = { name: string; quota: number; winPercent: number };
 
@@ -244,6 +266,10 @@ function AdminPage() {
   const [uploading, setUploading] = useState(false);
   const [alwaysWin, setAlwaysWin] = useState(false);
   const [alwaysWinMsg, setAlwaysWinMsg] = useState<string | null>(null);
+  const [codeInput, setCodeInput] = useState("");
+  const [codeResult, setCodeResult] = useState<CodeCheck | null>(null);
+  const [codeBusy, setCodeBusy] = useState(false);
+  const [codeFilter, setCodeFilter] = useState<"all" | "valid" | "used" | "expired">("all");
 
   async function toggleAlwaysWin(next: boolean) {
     setAlwaysWin(next);
@@ -345,10 +371,71 @@ function AdminPage() {
     setBusy(false);
   }
 
-  const codeSpins = useMemo(
-    () => (data?.spins ?? []).filter((s) => s.result === "win" && s.code),
-    [data],
+  const codeSpins = useMemo(() => {
+    const now = Date.now();
+    return (data?.spins ?? [])
+      .filter((s) => s.result === "win" && s.code)
+      .map((s) => {
+        const expiresAt =
+          (s as { code_expires_at?: string | null }).code_expires_at ??
+          new Date(new Date(s.created_at).getTime() + 7 * 86400000).toISOString();
+        const used = s.code_used === true;
+        const status: "valid" | "used" | "expired" = used
+          ? "used"
+          : new Date(expiresAt).getTime() < now
+            ? "expired"
+            : "valid";
+        return {
+          id: s.id,
+          code: s.code as string,
+          rewardId: s.reward_id,
+          createdAt: s.created_at,
+          expiresAt,
+          usedAt: (s as { code_used_at?: string | null }).code_used_at ?? null,
+          used,
+          status,
+        };
+      });
+  }, [data]);
+
+  const filteredCodeSpins = useMemo(
+    () => (codeFilter === "all" ? codeSpins : codeSpins.filter((c) => c.status === codeFilter)),
+    [codeSpins, codeFilter],
   );
+
+  const codeCounts = useMemo(
+    () => ({
+      all: codeSpins.length,
+      valid: codeSpins.filter((c) => c.status === "valid").length,
+      used: codeSpins.filter((c) => c.status === "used").length,
+      expired: codeSpins.filter((c) => c.status === "expired").length,
+    }),
+    [codeSpins],
+  );
+
+  async function handleCheckCode(e: React.FormEvent) {
+    e.preventDefault();
+    if (!codeInput.trim()) return;
+    setCodeBusy(true);
+    try {
+      setCodeResult(await checkCode({ data: { code: codeInput } }));
+    } catch {
+      setCodeResult(null);
+    } finally {
+      setCodeBusy(false);
+    }
+  }
+
+  async function handleValidateCode() {
+    if (!codeResult || codeResult.status !== "valid") return;
+    setCodeBusy(true);
+    try {
+      setCodeResult(await validateCode({ data: { code: codeResult.code } }));
+      await load();
+    } finally {
+      setCodeBusy(false);
+    }
+  }
 
   async function toggleCode(spinId: string, used: boolean) {
     setBusy(true);
@@ -738,41 +825,132 @@ function AdminPage() {
         {alwaysWinMsg && <p className="mt-3 text-sm font-extrabold">{alwaysWinMsg}</p>}
       </Card>
 
-      {rewardMode === "next_visit" && (
-        <Card title="Codes de récompense">
-          {codeSpins.length === 0 ? (
-            <p className="text-sm font-bold text-ink/70">Aucun code généré pour le moment.</p>
-          ) : (
-            <div className="space-y-2">
-              {codeSpins.map((sp) => {
-                const reward = data.rewards.find((r) => r.id === sp.reward_id);
-                return (
-                  <div
-                    key={sp.id}
-                    className="ink-border flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-white px-4 py-3"
-                  >
-                    <div>
-                      <p className="font-extrabold">{sp.code}</p>
-                      <p className="text-xs font-bold text-ink/60">
-                        {reward?.name ?? "Lot"} · {new Date(sp.created_at).toLocaleString("fr-FR")}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => toggleCode(sp.id, !sp.code_used)}
-                      disabled={busy}
-                      className={`ink-border min-h-[44px] rounded-full px-4 text-sm font-extrabold uppercase disabled:opacity-50 ${
-                        sp.code_used ? "bg-white text-ink/60" : "bg-green text-white"
-                      }`}
-                    >
-                      {sp.code_used ? "Utilisé ✓ (annuler)" : "Marquer utilisé"}
-                    </button>
-                  </div>
-                );
-              })}
+      <Card title="Vérifier un code">
+        <p className="mb-3 font-bold text-ink/80">
+          Saisissez le code présenté par votre client pour savoir s'il est valide, déjà utilisé ou
+          expiré. Chaque code est valable 7 jours après le gain.
+        </p>
+        <form onSubmit={handleCheckCode} className="mb-4 flex flex-wrap gap-3">
+          <input
+            value={codeInput}
+            onChange={(e) => setCodeInput(e.target.value.toUpperCase())}
+            placeholder="TXM-XXXXX"
+            className="ink-border min-h-[52px] flex-1 rounded-full px-5 font-extrabold uppercase tracking-widest"
+          />
+          <button
+            type="submit"
+            disabled={codeBusy || !codeInput.trim()}
+            className="ink-border-thick min-h-[52px] rounded-full bg-yellow px-6 font-extrabold uppercase shadow-pop-ink disabled:opacity-50"
+          >
+            Vérifier 🔍
+          </button>
+        </form>
+
+        {codeResult && (
+          <div className="ink-border rounded-2xl bg-white p-4">
+            <div className="mb-2 flex flex-wrap items-center gap-3">
+              <span className="font-display text-xl font-extrabold tracking-widest">
+                {codeResult.code}
+              </span>
+              <span
+                className={`ink-border rounded-full px-3 py-1 text-xs font-extrabold ${
+                  CODE_STATUS_CLASS[codeResult.status] ?? "bg-white"
+                }`}
+              >
+                {CODE_STATUS_LABEL[codeResult.status]}
+              </span>
             </div>
-          )}
-        </Card>
-      )}
+            {codeResult.status === "unknown" ? (
+              <p className="text-sm font-bold text-ink/70">
+                Ce code n'existe pas dans votre historique.
+              </p>
+            ) : (
+              <ul className="space-y-1 text-sm font-bold text-ink/70">
+                <li>Lot : {codeResult.rewardName ?? "—"}</li>
+                <li>Client : {codeResult.clientName ?? "—"}</li>
+                <li>Gagné le : {fmtDate(codeResult.wonAt)}</li>
+                <li>Expire le : {fmtDate(codeResult.expiresAt)}</li>
+                {codeResult.usedAt && <li>Utilisé le : {fmtDate(codeResult.usedAt)}</li>}
+              </ul>
+            )}
+            {codeResult.status === "valid" && (
+              <button
+                onClick={handleValidateCode}
+                disabled={codeBusy}
+                className="ink-border-thick mt-4 min-h-[52px] w-full rounded-full bg-green px-6 font-extrabold uppercase text-white shadow-pop-ink disabled:opacity-50"
+              >
+                Valider ce code ✓
+              </button>
+            )}
+          </div>
+        )}
+      </Card>
+
+      <Card title={`Codes de récompense (${codeCounts.all})`}>
+        <div className="mb-4 flex flex-wrap gap-2">
+          {(
+            [
+              ["all", "Tous"],
+              ["valid", "En attente"],
+              ["used", "Utilisés"],
+              ["expired", "Expirés"],
+            ] as const
+          ).map(([value, label]) => (
+            <button
+              key={value}
+              onClick={() => setCodeFilter(value)}
+              className={`ink-border min-h-[44px] rounded-full px-4 text-sm font-extrabold ${
+                codeFilter === value ? "bg-ink text-white" : "bg-white"
+              }`}
+            >
+              {label} ({codeCounts[value]})
+            </button>
+          ))}
+        </div>
+        {filteredCodeSpins.length === 0 ? (
+          <p className="text-sm font-bold text-ink/70">Aucun code dans cette catégorie.</p>
+        ) : (
+          <div className="max-h-96 space-y-2 overflow-y-auto">
+            {filteredCodeSpins.map((sp) => {
+              const reward = data.rewards.find((r) => r.id === sp.rewardId);
+              return (
+                <div
+                  key={sp.id}
+                  className="ink-border flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-white px-4 py-3"
+                >
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-extrabold tracking-widest">{sp.code}</p>
+                      <span
+                        className={`ink-border rounded-full px-2 py-0.5 text-[10px] font-extrabold ${
+                          CODE_STATUS_CLASS[sp.status] ?? "bg-white"
+                        }`}
+                      >
+                        {CODE_STATUS_LABEL[sp.status]}
+                      </span>
+                    </div>
+                    <p className="text-xs font-bold text-ink/60">
+                      {reward?.name ?? "Lot"} · gagné le {fmtDate(sp.createdAt)}
+                      {sp.used
+                        ? ` · utilisé le ${fmtDate(sp.usedAt)}`
+                        : ` · expire le ${fmtDate(sp.expiresAt)}`}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => toggleCode(sp.id, !sp.used)}
+                    disabled={busy}
+                    className={`ink-border min-h-[44px] rounded-full px-4 text-sm font-extrabold uppercase disabled:opacity-50 ${
+                      sp.used ? "bg-white text-ink/60" : "bg-green text-white"
+                    }`}
+                  >
+                    {sp.used ? "Annuler" : "Valider ✓"}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Card>
 
       <Card title={`Clients (${data.clients.length})`}>
         <div className="mb-4 flex flex-wrap gap-3">

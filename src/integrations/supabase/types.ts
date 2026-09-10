@@ -285,7 +285,9 @@ export type Database = {
         Row: {
           client_id: string | null
           code: string | null
+          code_expires_at: string | null
           code_used: boolean
+          code_used_at: string | null
           created_at: string
           id: string
           merchant_id: string | null
@@ -295,7 +297,9 @@ export type Database = {
         Insert: {
           client_id?: string | null
           code?: string | null
+          code_expires_at?: string | null
           code_used?: boolean
+          code_used_at?: string | null
           created_at?: string
           id?: string
           merchant_id?: string | null
@@ -305,7 +309,9 @@ export type Database = {
         Update: {
           client_id?: string | null
           code?: string | null
+          code_expires_at?: string | null
           code_used?: boolean
+          code_used_at?: string | null
           created_at?: string
           id?: string
           merchant_id?: string | null
