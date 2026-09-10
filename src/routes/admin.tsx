@@ -398,15 +398,8 @@ function AdminPage() {
     }
   }
 
-  async function toggleCode(spinId: string, used: boolean) {
-    setBusy(true);
-    try {
-      await markSpinCodeUsed({ data: { spinId, used } });
-      await load();
-    } finally {
-      setBusy(false);
-    }
-  }
+
+
 
   async function handleReset() {
     if (!confirm("Supprimer tous les tours et clients de votre compte ? Action irréversible.")) return;
