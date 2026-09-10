@@ -953,6 +953,8 @@ function AdminPage() {
           </div>
         )}
       </Card>
+      </>
+      )}
 
       <Card title={`Clients (${data.clients.length})`}>
         <div className="mb-4 flex flex-wrap gap-3">
