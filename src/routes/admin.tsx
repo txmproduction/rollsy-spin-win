@@ -256,6 +256,7 @@ function AdminPage() {
   const [goalUrl, setGoalUrl] = useState("");
   const [frequency, setFrequency] = useState<"day" | "week">("week");
   const [rewardMode, setRewardMode] = useState<"immediate" | "next_visit">("immediate");
+  const [codeValidityDays, setCodeValidityDays] = useState<7 | 15 | 30>(7);
   const [rewardRows, setRewardRows] = useState<
     { name: string; quota: number; winPercent: number }[]
   >([]);
@@ -317,6 +318,8 @@ function AdminPage() {
     setGoalUrl(data.merchant.goal_url ?? "");
     setFrequency((data.rewards[0]?.frequency as "day" | "week") ?? "week");
     setRewardMode(data.merchant.reward_mode === "next_visit" ? "next_visit" : "immediate");
+    const cvd = Number((data.merchant as { code_validity_days?: number | null }).code_validity_days);
+    setCodeValidityDays(cvd === 15 ? 15 : cvd === 30 ? 30 : 7);
     const rows: RewardRow[] = data.rewards.map((r) => ({
       name: r.name,
       quota: r.quota,
@@ -351,6 +354,7 @@ function AdminPage() {
           goalUrl: goalUrl.trim(),
           frequency,
           rewardMode,
+          codeValidityDays,
           rewards: rowsToSave.map((r) => ({
             name: r.name.trim(),
             quota: Number(r.quota) || 1,
@@ -627,6 +631,27 @@ function AdminPage() {
               </button>
             ))}
           </div>
+          {rewardMode === "next_visit" && (
+            <div className="mt-4">
+              <p className="mb-2 text-sm font-extrabold">Délai de récupération de la récompense</p>
+              <div className="grid grid-cols-3 gap-3">
+                {([7, 15, 30] as const).map((d) => (
+                  <button
+                    key={d}
+                    onClick={() => setCodeValidityDays(d)}
+                    className={`ink-border min-h-[48px] rounded-2xl px-3 font-extrabold ${
+                      codeValidityDays === d ? "bg-green text-white" : "bg-yellow/30"
+                    }`}
+                  >
+                    {d} jours
+                  </button>
+                ))}
+              </div>
+              <p className="mt-2 text-xs font-bold text-ink/60">
+                Les nouveaux codes gagnés expireront {codeValidityDays} jours après le gain.
+              </p>
+            </div>
+          )}
         </div>
         {alwaysWin ? (
           <p className="ink-border mb-4 rounded-2xl bg-mint/40 px-4 py-3 text-sm font-bold">
@@ -778,12 +803,11 @@ function AdminPage() {
         {alwaysWinMsg && <p className="mt-3 text-sm font-extrabold">{alwaysWinMsg}</p>}
       </Card>
 
-      {rewardMode === "next_visit" && (
       <Card title="Vérifier un code">
 
         <p className="mb-3 font-bold text-ink/80">
           Saisissez le code présenté par votre client pour savoir s'il est valide, déjà utilisé ou
-          expiré. Chaque code est valable 7 jours après le gain.
+          expiré. Chaque code est valable {codeValidityDays} jours après le gain.
         </p>
         <form onSubmit={handleCheckCode} className="mb-4 flex flex-wrap gap-3">
           <input
@@ -847,7 +871,6 @@ function AdminPage() {
           Voir tous les codes et participants →
         </Link>
       </Card>
-      )}
 
 
       <Card title={`Clients (${data.clients.length})`}>

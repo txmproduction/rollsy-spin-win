@@ -104,6 +104,7 @@ export type Database = {
           access_status: string
           always_win: boolean
           cgv_accepted_at: string | null
+          code_validity_days: number
           company_name: string
           created_at: string
           email: string
@@ -125,6 +126,7 @@ export type Database = {
           access_status?: string
           always_win?: boolean
           cgv_accepted_at?: string | null
+          code_validity_days?: number
           company_name: string
           created_at?: string
           email: string
@@ -146,6 +148,7 @@ export type Database = {
           access_status?: string
           always_win?: boolean
           cgv_accepted_at?: string | null
+          code_validity_days?: number
           company_name?: string
           created_at?: string
           email?: string

@@ -1,0 +1,2 @@
+ALTER TABLE public.merchants ADD COLUMN IF NOT EXISTS code_validity_days integer NOT NULL DEFAULT 7;
+ALTER TABLE public.merchants ADD CONSTRAINT merchants_code_validity_days_check CHECK (code_validity_days IN (7, 15, 30));
