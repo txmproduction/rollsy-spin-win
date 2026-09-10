@@ -142,6 +142,10 @@ function AdminPage() {
   const [busy, setBusy] = useState(false);
   const [data, setData] = useState<AdminData | null>(null);
   const [isSuper, setIsSuper] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const dataRef = useRef<AdminData | null>(null);
+  dataRef.current = data;
+
 
   const load = useCallback(async () => {
     try {
