@@ -464,7 +464,9 @@ export async function loadMerchantAdminData(userId: string) {
   const [spins, rewards, clients] = await Promise.all([
     db
       .from("spins")
-      .select("id, client_id, reward_id, result, code, code_used, created_at")
+      .select(
+        "id, client_id, reward_id, result, code, code_used, code_used_at, code_expires_at, created_at",
+      )
       .eq("merchant_id", m.id)
       .order("created_at", { ascending: false }),
     db
