@@ -371,47 +371,8 @@ function AdminPage() {
     setBusy(false);
   }
 
-  const codeSpins = useMemo(() => {
-    const now = Date.now();
-    return (data?.spins ?? [])
-      .filter((s) => s.result === "win" && s.code)
-      .map((s) => {
-        const expiresAt =
-          (s as { code_expires_at?: string | null }).code_expires_at ??
-          new Date(new Date(s.created_at).getTime() + 7 * 86400000).toISOString();
-        const used = s.code_used === true;
-        const status: "valid" | "used" | "expired" = used
-          ? "used"
-          : new Date(expiresAt).getTime() < now
-            ? "expired"
-            : "valid";
-        return {
-          id: s.id,
-          code: s.code as string,
-          rewardId: s.reward_id,
-          createdAt: s.created_at,
-          expiresAt,
-          usedAt: (s as { code_used_at?: string | null }).code_used_at ?? null,
-          used,
-          status,
-        };
-      });
-  }, [data]);
 
-  const filteredCodeSpins = useMemo(
-    () => (codeFilter === "all" ? codeSpins : codeSpins.filter((c) => c.status === codeFilter)),
-    [codeSpins, codeFilter],
-  );
 
-  const codeCounts = useMemo(
-    () => ({
-      all: codeSpins.length,
-      valid: codeSpins.filter((c) => c.status === "valid").length,
-      used: codeSpins.filter((c) => c.status === "used").length,
-      expired: codeSpins.filter((c) => c.status === "expired").length,
-    }),
-    [codeSpins],
-  );
 
   async function handleCheckCode(e: React.FormEvent) {
     e.preventDefault();
