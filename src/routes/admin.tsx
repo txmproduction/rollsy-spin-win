@@ -9,7 +9,6 @@ import {
   resetRollsyData,
   saveWheelSetup,
   completeSignup,
-  markSpinCodeUsed,
   checkCode,
   validateCode,
   amISuperAdmin,
