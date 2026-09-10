@@ -39,7 +39,7 @@ export function AccessGate({ children }: { children: React.ReactNode }) {
     let alive = true;
     void (async () => {
       try {
-        const s = await getMyAccessState();
+        const s = await withTimeout(getMyAccessState());
         if (!alive) return;
         setState(s);
         if (s?.blocked) navigate({ to: "/acces-suspendu", replace: true });
