@@ -140,7 +140,9 @@ function CodesPage() {
 
   const load = useCallback(async () => {
     try {
-      setData(await getMerchantAdminData());
+      setData(await withTimeout(getMerchantAdminData()));
+    } catch {
+      /* réseau indisponible : on réessaiera au retour au premier plan */
     } finally {
       setLoading(false);
     }
@@ -149,6 +151,10 @@ function CodesPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useAppResume(() => {
+    void load();
+  });
 
   const realItems = useMemo<CodeItem[]>(() => {
     const now = Date.now();
