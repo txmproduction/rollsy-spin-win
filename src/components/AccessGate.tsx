@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { getMyAccessState } from "@/lib/rollsy.functions";
+import { withTimeout } from "@/lib/resilience";
 
 export const WHATSAPP_NUMBER = "33695449963";
 
@@ -39,7 +40,7 @@ export function AccessGate({ children }: { children: React.ReactNode }) {
     let alive = true;
     void (async () => {
       try {
-        const s = await getMyAccessState();
+        const s = await withTimeout(getMyAccessState());
         if (!alive) return;
         setState(s);
         if (s?.blocked) navigate({ to: "/acces-suspendu", replace: true });

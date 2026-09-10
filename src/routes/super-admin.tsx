@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
+import { withTimeout, useAppResume } from "@/lib/resilience";
 import { supabase } from "@/integrations/supabase/client";
 import { listMerchantsForSuperAdmin, setMerchantAccess } from "@/lib/rollsy.functions";
 
@@ -49,17 +50,28 @@ function SuperAdminPage() {
     }
   }, [navigate]);
 
-  useEffect(() => {
-    void (async () => {
-      const { data: s } = await supabase.auth.getSession();
+  const boot = useCallback(async () => {
+    try {
+      const { data: s } = await withTimeout(supabase.auth.getSession());
       if (!s.session) {
         navigate({ to: "/admin", replace: true });
         return;
       }
       await load();
+    } catch {
+      /* réseau indisponible */
+    } finally {
       setBooting(false);
-    })();
+    }
   }, [load, navigate]);
+
+  useEffect(() => {
+    void boot();
+  }, [boot]);
+
+  useAppResume(() => {
+    void load();
+  });
 
   async function changeStatus(row: Row, status: "trial" | "active" | "suspended") {
     setSavingId(row.id);

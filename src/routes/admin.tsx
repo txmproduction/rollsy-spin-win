@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { withTimeout, useAppResume } from "@/lib/resilience";
 import { QRCodeCanvas } from "qrcode.react";
 import { supabase } from "@/integrations/supabase/client";
 import { AccessGate } from "@/components/AccessGate";
@@ -141,34 +142,52 @@ function AdminPage() {
   const [busy, setBusy] = useState(false);
   const [data, setData] = useState<AdminData | null>(null);
   const [isSuper, setIsSuper] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const dataRef = useRef<AdminData | null>(null);
+  dataRef.current = data;
+
 
   const load = useCallback(async () => {
     try {
-      await completeSignup({ data: {} });
-      const d = await getMerchantAdminData();
+      await withTimeout(completeSignup({ data: {} }));
+      const d = await withTimeout(getMerchantAdminData());
       setData(d);
+      setLoadFailed(false);
       try {
-        setIsSuper((await amISuperAdmin()).superAdmin);
+        setIsSuper((await withTimeout(amISuperAdmin())).superAdmin);
       } catch {
         setIsSuper(false);
       }
       if (!d.merchant.onboarding_completed) navigate({ to: "/onboarding" });
     } catch {
       setData(null);
+      setLoadFailed(true);
     }
   }, [navigate]);
 
-  useEffect(() => {
-    const run = async () => {
-      const { data: s } = await supabase.auth.getSession();
+  const boot = useCallback(async () => {
+    setLoadFailed(false);
+    try {
+      const { data: s } = await withTimeout(supabase.auth.getSession());
       if (s.session) {
         setSignedIn(true);
         await load();
       }
+    } catch {
+      setLoadFailed(true);
+    } finally {
       setBooting(false);
-    };
-    void run();
+    }
   }, [load]);
+
+  useEffect(() => {
+    void boot();
+  }, [boot]);
+
+  // Retour d'arrière-plan : si l'écran est resté vide, on relance le chargement.
+  useAppResume(() => {
+    if (!dataRef.current) void boot();
+  });
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -463,7 +482,19 @@ function AdminPage() {
   if (!data) {
     return (
       <main className="mx-auto max-w-md px-4 py-20 text-center font-bold">
-        Chargement de votre espace...
+        {loadFailed ? (
+          <>
+            <p className="mb-4">Connexion interrompue. Vérifiez votre réseau.</p>
+            <button
+              onClick={() => void boot()}
+              className="ink-border rounded-full bg-yellow px-6 py-3 font-extrabold"
+            >
+              Réessayer
+            </button>
+          </>
+        ) : (
+          "Chargement de votre espace..."
+        )}
       </main>
     );
   }

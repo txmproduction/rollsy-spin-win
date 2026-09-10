@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { withTimeout, useAppResume } from "@/lib/resilience";
 import { AccessGate } from "@/components/AccessGate";
 import { getMerchantAdminData, markSpinCodeUsed } from "@/lib/rollsy.functions";
 
@@ -140,7 +141,9 @@ function CodesPage() {
 
   const load = useCallback(async () => {
     try {
-      setData(await getMerchantAdminData());
+      setData(await withTimeout(getMerchantAdminData()));
+    } catch {
+      /* réseau indisponible : on réessaiera au retour au premier plan */
     } finally {
       setLoading(false);
     }
@@ -149,6 +152,10 @@ function CodesPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useAppResume(() => {
+    void load();
+  });
 
   const realItems = useMemo<CodeItem[]>(() => {
     const now = Date.now();

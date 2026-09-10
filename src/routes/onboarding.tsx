@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { withTimeout } from "@/lib/resilience";
 import { supabase } from "@/integrations/supabase/client";
 import { AccessGate } from "@/components/AccessGate";
 import { completeSignup, saveWheelSetup } from "@/lib/rollsy.functions";
@@ -97,15 +98,19 @@ function OnboardingPage() {
 
   useEffect(() => {
     const run = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!data.session) {
-        navigate({ to: "/admin" });
-        return;
+      try {
+        const { data } = await withTimeout(supabase.auth.getSession());
+        if (!data.session) {
+          navigate({ to: "/admin" });
+          return;
+        }
+      } catch {
+        /* réseau lent : on laisse l'écran s'afficher */
       }
       try {
-        await completeSignup({ data: {} });
+        await withTimeout(completeSignup({ data: {} }));
       } catch {
-        /* déjà créé */
+        /* déjà créé ou réseau indisponible */
       }
       setReady(true);
     };
