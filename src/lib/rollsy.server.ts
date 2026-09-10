@@ -163,6 +163,7 @@ export async function getPublicMerchant(slug: string): Promise<PublicMerchant | 
     goalUrl: (m.goal_url as string) ?? null,
     goalLabel: goalLabel(m.goal_type as string),
     rewardMode: (m.reward_mode as string) === "next_visit" ? "next_visit" : "immediate",
+    alwaysWin: (m as { always_win?: boolean }).always_win === true,
     logoUrl: await signedLogoUrl(m.logo_path as string | null),
     rewards: (rewards ?? []) as PublicMerchant["rewards"],
   };
