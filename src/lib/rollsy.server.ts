@@ -64,6 +64,12 @@ export const codeSchema = z.object({
   used: z.boolean(),
 });
 
+export const codeLookupSchema = z.object({
+  code: z.string().trim().min(3).max(40),
+});
+
+export const CODE_VALIDITY_DAYS = 7;
+
 const GOAL_LABELS: Record<string, string> = {
   google: "Laisser un avis Google",
   instagram: "S'abonner à l'Instagram",
