@@ -51,6 +51,7 @@ export const setupSchema = z.object({
     .max(8),
   alwaysWin: z.boolean().optional(),
   rewardMode: z.enum(["immediate", "next_visit"]).optional(),
+  codeValidityDays: z.union([z.literal(7), z.literal(15), z.literal(30)]).optional(),
   logoPath: z.string().trim().max(300).nullable().optional(),
   completeOnboarding: z.boolean().optional(),
 });
@@ -207,7 +208,7 @@ export async function decideAndRecordSpin(slug: string, clientId: string | null)
   const db = await admin();
   const { data: merchant } = await db
     .from("merchants")
-    .select("id, reward_mode, always_win")
+    .select("id, reward_mode, always_win, code_validity_days")
     .eq("slug", slug)
     .maybeSingle();
   if (!merchant) throw new Error("Commerce introuvable.");
@@ -287,7 +288,10 @@ export async function decideAndRecordSpin(slug: string, clientId: string | null)
   let code: string | null = null;
   let expiresAt: string | null = null;
   if (wonId) {
-    expiresAt = new Date(Date.now() + CODE_VALIDITY_DAYS * 86400000).toISOString();
+    const validityDays =
+      Number((merchant as { code_validity_days?: number | null }).code_validity_days) ||
+      CODE_VALIDITY_DAYS;
+    expiresAt = new Date(Date.now() + validityDays * 86400000).toISOString();
     for (let attempt = 0; attempt < 6; attempt++) {
       const candidate = generateCode();
       const { data: clash } = await db
@@ -322,7 +326,7 @@ export async function findMerchantByOwner(userId: string) {
   const { data } = await db
     .from("merchants")
     .select(
-      "id, slug, company_name, first_name, last_name, phone, email, goal_type, goal_url, reward_mode, always_win, logo_path, status, access_status, onboarding_completed, trial_ends_at",
+      "id, slug, company_name, first_name, last_name, phone, email, goal_type, goal_url, reward_mode, always_win, code_validity_days, logo_path, status, access_status, onboarding_completed, trial_ends_at",
     )
     .eq("owner_id", userId)
     .maybeSingle();
@@ -365,7 +369,7 @@ export async function ensureMerchantForUser(
       trial_ends_at: trialEnds.toISOString(),
     })
     .select(
-      "id, slug, company_name, first_name, last_name, phone, email, goal_type, goal_url, reward_mode, always_win, logo_path, status, access_status, onboarding_completed, trial_ends_at",
+      "id, slug, company_name, first_name, last_name, phone, email, goal_type, goal_url, reward_mode, always_win, code_validity_days, logo_path, status, access_status, onboarding_completed, trial_ends_at",
     )
     .single();
   if (error || !data) {
@@ -406,6 +410,7 @@ export async function saveMerchantSetup(userId: string, input: z.infer<typeof se
       goal_type: input.goalType,
       goal_url: input.goalUrl,
       ...(input.rewardMode ? { reward_mode: input.rewardMode } : {}),
+      ...(input.codeValidityDays ? { code_validity_days: input.codeValidityDays } : {}),
       ...(input.logoPath !== undefined ? { logo_path: input.logoPath } : {}),
       ...(input.completeOnboarding ? { onboarding_completed: true } : {}),
       ...(input.alwaysWin !== undefined ? { always_win: input.alwaysWin } : {}),
