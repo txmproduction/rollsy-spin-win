@@ -873,6 +873,9 @@ function AdminPage() {
           Voir tous les codes et participants →
         </Link>
       </Card>
+      )}
+
+
 
 
       <Card title={`Clients (${data.clients.length})`}>
