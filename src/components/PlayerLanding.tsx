@@ -23,7 +23,13 @@ export default function PlayerLanding({ merchant }: { merchant: PublicMerchant }
   const handleReview = () => {
     if (typeof window === "undefined") return;
     localStorage.setItem(reviewedKey, "true");
-    if (merchant.goalUrl) window.open(merchant.goalUrl, "_blank", "noopener,noreferrer");
+    if (merchant.goalUrl) {
+      window.open(merchant.goalUrl, "_blank", "noopener,noreferrer");
+    } else {
+      window.alert(
+        "Le lien n'est pas encore configuré par le commerce. Vous pouvez continuer et tourner la roue.",
+      );
+    }
   };
 
   const handleSpinAccess = () => {
