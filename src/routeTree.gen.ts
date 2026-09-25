@@ -19,11 +19,13 @@ import { Route as ConfirmationRouteImport } from './routes/confirmation'
 import { Route as InscriptionRouteImport } from './routes/inscription'
 import { Route as MotDePasseOublieRouteImport } from './routes/mot-de-passe-oublie'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as ProRouteImport } from './routes/pro'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RoueRouteImport } from './routes/roue'
 import { Route as SuperAdminRouteImport } from './routes/super-admin'
 import { Route as MSlugIndexRouteImport } from './routes/m.$slug.index'
 import { Route as MSlugRoueRouteImport } from './routes/m.$slug.roue'
+import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
@@ -78,6 +80,11 @@ const OnboardingRoute = OnboardingRouteImport.update({
   path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProRoute = ProRouteImport.update({
+  id: '/pro',
+  path: '/pro',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
@@ -103,6 +110,12 @@ const MSlugRoueRoute = MSlugRoueRouteImport.update({
   path: '/m/$slug/roue',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicPaymentsWebhookRoute =
+  ApiPublicPaymentsWebhookRouteImport.update({
+    id: '/api/public/payments/webhook',
+    path: '/api/public/payments/webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const LovableEmailAuthPreviewRoute = LovableEmailAuthPreviewRouteImport.update({
   id: '/lovable/email/auth/preview',
   path: '/lovable/email/auth/preview',
@@ -131,11 +144,13 @@ export interface FileRoutesByFullPath {
   '/inscription': typeof InscriptionRoute
   '/mot-de-passe-oublie': typeof MotDePasseOublieRoute
   '/onboarding': typeof OnboardingRoute
+  '/pro': typeof ProRoute
   '/reset-password': typeof ResetPasswordRoute
   '/roue': typeof RoueRoute
   '/super-admin': typeof SuperAdminRoute
   '/m/$slug/roue': typeof MSlugRoueRoute
   '/m/$slug/': typeof MSlugIndexRoute
+  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -151,11 +166,13 @@ export interface FileRoutesByTo {
   '/inscription': typeof InscriptionRoute
   '/mot-de-passe-oublie': typeof MotDePasseOublieRoute
   '/onboarding': typeof OnboardingRoute
+  '/pro': typeof ProRoute
   '/reset-password': typeof ResetPasswordRoute
   '/roue': typeof RoueRoute
   '/super-admin': typeof SuperAdminRoute
   '/m/$slug/roue': typeof MSlugRoueRoute
   '/m/$slug': typeof MSlugIndexRoute
+  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -172,11 +189,13 @@ export interface FileRoutesById {
   '/inscription': typeof InscriptionRoute
   '/mot-de-passe-oublie': typeof MotDePasseOublieRoute
   '/onboarding': typeof OnboardingRoute
+  '/pro': typeof ProRoute
   '/reset-password': typeof ResetPasswordRoute
   '/roue': typeof RoueRoute
   '/super-admin': typeof SuperAdminRoute
   '/m/$slug/roue': typeof MSlugRoueRoute
   '/m/$slug/': typeof MSlugIndexRoute
+  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -194,11 +213,13 @@ export interface FileRouteTypes {
     | '/inscription'
     | '/mot-de-passe-oublie'
     | '/onboarding'
+    | '/pro'
     | '/reset-password'
     | '/roue'
     | '/super-admin'
     | '/m/$slug/roue'
     | '/m/$slug/'
+    | '/api/public/payments/webhook'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/transactional/preview'
@@ -214,11 +235,13 @@ export interface FileRouteTypes {
     | '/inscription'
     | '/mot-de-passe-oublie'
     | '/onboarding'
+    | '/pro'
     | '/reset-password'
     | '/roue'
     | '/super-admin'
     | '/m/$slug/roue'
     | '/m/$slug'
+    | '/api/public/payments/webhook'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/transactional/preview'
@@ -234,11 +257,13 @@ export interface FileRouteTypes {
     | '/inscription'
     | '/mot-de-passe-oublie'
     | '/onboarding'
+    | '/pro'
     | '/reset-password'
     | '/roue'
     | '/super-admin'
     | '/m/$slug/roue'
     | '/m/$slug/'
+    | '/api/public/payments/webhook'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/transactional/preview'
@@ -255,11 +280,13 @@ export interface RootRouteChildren {
   InscriptionRoute: typeof InscriptionRoute
   MotDePasseOublieRoute: typeof MotDePasseOublieRoute
   OnboardingRoute: typeof OnboardingRoute
+  ProRoute: typeof ProRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   RoueRoute: typeof RoueRoute
   SuperAdminRoute: typeof SuperAdminRoute
   MSlugRoueRoute: typeof MSlugRoueRoute
   MSlugIndexRoute: typeof MSlugIndexRoute
+  ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
   LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
@@ -337,6 +364,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnboardingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pro': {
+      id: '/pro'
+      path: '/pro'
+      fullPath: '/pro'
+      preLoaderRoute: typeof ProRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reset-password': {
       id: '/reset-password'
       path: '/reset-password'
@@ -370,6 +404,13 @@ declare module '@tanstack/react-router' {
       path: '/m/$slug/roue'
       fullPath: '/m/$slug/roue'
       preLoaderRoute: typeof MSlugRoueRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/payments/webhook': {
+      id: '/api/public/payments/webhook'
+      path: '/api/public/payments/webhook'
+      fullPath: '/api/public/payments/webhook'
+      preLoaderRoute: typeof ApiPublicPaymentsWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/lovable/email/auth/preview': {
@@ -407,11 +448,13 @@ const rootRouteChildren: RootRouteChildren = {
   InscriptionRoute: InscriptionRoute,
   MotDePasseOublieRoute: MotDePasseOublieRoute,
   OnboardingRoute: OnboardingRoute,
+  ProRoute: ProRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   RoueRoute: RoueRoute,
   SuperAdminRoute: SuperAdminRoute,
   MSlugRoueRoute: MSlugRoueRoute,
   MSlugIndexRoute: MSlugIndexRoute,
+  ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
   LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
