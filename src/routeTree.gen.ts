@@ -19,6 +19,7 @@ import { Route as ConfirmationRouteImport } from './routes/confirmation'
 import { Route as InscriptionRouteImport } from './routes/inscription'
 import { Route as MotDePasseOublieRouteImport } from './routes/mot-de-passe-oublie'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as ProRouteImport } from './routes/pro'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RoueRouteImport } from './routes/roue'
 import { Route as SuperAdminRouteImport } from './routes/super-admin'
@@ -77,6 +78,11 @@ const MotDePasseOublieRoute = MotDePasseOublieRouteImport.update({
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProRoute = ProRouteImport.update({
+  id: '/pro',
+  path: '/pro',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -138,6 +144,7 @@ export interface FileRoutesByFullPath {
   '/inscription': typeof InscriptionRoute
   '/mot-de-passe-oublie': typeof MotDePasseOublieRoute
   '/onboarding': typeof OnboardingRoute
+  '/pro': typeof ProRoute
   '/reset-password': typeof ResetPasswordRoute
   '/roue': typeof RoueRoute
   '/super-admin': typeof SuperAdminRoute
@@ -159,6 +166,7 @@ export interface FileRoutesByTo {
   '/inscription': typeof InscriptionRoute
   '/mot-de-passe-oublie': typeof MotDePasseOublieRoute
   '/onboarding': typeof OnboardingRoute
+  '/pro': typeof ProRoute
   '/reset-password': typeof ResetPasswordRoute
   '/roue': typeof RoueRoute
   '/super-admin': typeof SuperAdminRoute
@@ -181,6 +189,7 @@ export interface FileRoutesById {
   '/inscription': typeof InscriptionRoute
   '/mot-de-passe-oublie': typeof MotDePasseOublieRoute
   '/onboarding': typeof OnboardingRoute
+  '/pro': typeof ProRoute
   '/reset-password': typeof ResetPasswordRoute
   '/roue': typeof RoueRoute
   '/super-admin': typeof SuperAdminRoute
@@ -204,6 +213,7 @@ export interface FileRouteTypes {
     | '/inscription'
     | '/mot-de-passe-oublie'
     | '/onboarding'
+    | '/pro'
     | '/reset-password'
     | '/roue'
     | '/super-admin'
@@ -225,6 +235,7 @@ export interface FileRouteTypes {
     | '/inscription'
     | '/mot-de-passe-oublie'
     | '/onboarding'
+    | '/pro'
     | '/reset-password'
     | '/roue'
     | '/super-admin'
@@ -246,6 +257,7 @@ export interface FileRouteTypes {
     | '/inscription'
     | '/mot-de-passe-oublie'
     | '/onboarding'
+    | '/pro'
     | '/reset-password'
     | '/roue'
     | '/super-admin'
@@ -268,6 +280,7 @@ export interface RootRouteChildren {
   InscriptionRoute: typeof InscriptionRoute
   MotDePasseOublieRoute: typeof MotDePasseOublieRoute
   OnboardingRoute: typeof OnboardingRoute
+  ProRoute: typeof ProRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   RoueRoute: typeof RoueRoute
   SuperAdminRoute: typeof SuperAdminRoute
@@ -351,6 +364,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnboardingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pro': {
+      id: '/pro'
+      path: '/pro'
+      fullPath: '/pro'
+      preLoaderRoute: typeof ProRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reset-password': {
       id: '/reset-password'
       path: '/reset-password'
@@ -428,6 +448,7 @@ const rootRouteChildren: RootRouteChildren = {
   InscriptionRoute: InscriptionRoute,
   MotDePasseOublieRoute: MotDePasseOublieRoute,
   OnboardingRoute: OnboardingRoute,
+  ProRoute: ProRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   RoueRoute: RoueRoute,
   SuperAdminRoute: SuperAdminRoute,
