@@ -52,6 +52,63 @@ export type Database = {
           },
         ]
       }
+      campaigns: {
+        Row: {
+          body: string
+          channel: string
+          created_at: string
+          id: string
+          merchant_id: string
+          recipients: number
+          segment_id: string | null
+          segment_name: string
+          sent: number
+          status: string
+          subject: string | null
+        }
+        Insert: {
+          body: string
+          channel: string
+          created_at?: string
+          id?: string
+          merchant_id: string
+          recipients?: number
+          segment_id?: string | null
+          segment_name: string
+          sent?: number
+          status?: string
+          subject?: string | null
+        }
+        Update: {
+          body?: string
+          channel?: string
+          created_at?: string
+          id?: string
+          merchant_id?: string
+          recipients?: number
+          segment_id?: string | null
+          segment_name?: string
+          sent?: number
+          status?: string
+          subject?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaigns_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaigns_segment_id_fkey"
+            columns: ["segment_id"]
+            isOneToOne: false
+            referencedRelation: "crm_segments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           consent_at: string | null
@@ -99,6 +156,38 @@ export type Database = {
           },
         ]
       }
+      crm_segments: {
+        Row: {
+          created_at: string
+          filters: Json
+          id: string
+          merchant_id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          filters?: Json
+          id?: string
+          merchant_id: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          filters?: Json
+          id?: string
+          merchant_id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_segments_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       merchants: {
         Row: {
           access_status: string
@@ -117,9 +206,11 @@ export type Database = {
           onboarding_completed: boolean
           owner_id: string | null
           phone: string | null
+          plan: string
           reward_mode: string
           slug: string
           status: string
+          subscription_status: string | null
           trial_ends_at: string | null
         }
         Insert: {
@@ -139,9 +230,11 @@ export type Database = {
           onboarding_completed?: boolean
           owner_id?: string | null
           phone?: string | null
+          plan?: string
           reward_mode?: string
           slug: string
           status?: string
+          subscription_status?: string | null
           trial_ends_at?: string | null
         }
         Update: {
@@ -161,9 +254,11 @@ export type Database = {
           onboarding_completed?: boolean
           owner_id?: string | null
           phone?: string | null
+          plan?: string
           reward_mode?: string
           slug?: string
           status?: string
+          subscription_status?: string | null
           trial_ends_at?: string | null
         }
         Relationships: []
@@ -341,6 +436,65 @@ export type Database = {
             columns: ["reward_id"]
             isOneToOne: false
             referencedRelation: "rewards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          cancel_at_period_end: boolean | null
+          created_at: string | null
+          current_period_end: string | null
+          current_period_start: string | null
+          environment: string
+          id: string
+          merchant_id: string | null
+          price_id: string
+          product_id: string
+          status: string
+          stripe_customer_id: string
+          stripe_subscription_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          cancel_at_period_end?: boolean | null
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          environment?: string
+          id?: string
+          merchant_id?: string | null
+          price_id: string
+          product_id: string
+          status?: string
+          stripe_customer_id: string
+          stripe_subscription_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          cancel_at_period_end?: boolean | null
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          environment?: string
+          id?: string
+          merchant_id?: string | null
+          price_id?: string
+          product_id?: string
+          status?: string
+          stripe_customer_id?: string
+          stripe_subscription_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
             referencedColumns: ["id"]
           },
         ]
