@@ -120,6 +120,17 @@ function SuperAdminPage() {
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-10">
+      <button
+        type="button"
+        onClick={() => {
+          if (window.history.length > 1) window.history.back();
+          else navigate({ to: "/admin" });
+        }}
+        aria-label="Revenir à la page précédente"
+        className="mb-4 inline-flex items-center gap-2 text-sm font-bold text-ink/70 hover:text-ink"
+      >
+        <span aria-hidden className="text-lg">←</span> Retour
+      </button>
       <h1 className="mb-2 font-display text-3xl font-extrabold">Super admin 👑</h1>
       <p className="mb-8 font-bold text-ink/70">Tous les commerçants inscrits sur Rollsy.</p>
 
