@@ -507,6 +507,15 @@ function AdminPage() {
           <p className="font-bold text-ink/60">Espace commerçant Rollsy</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <Link to="/crm" className="ink-border min-h-[44px] rounded-full bg-white px-5 font-extrabold uppercase leading-[44px]">
+            Clients
+          </Link>
+          <Link to="/campagnes" className="ink-border min-h-[44px] rounded-full bg-white px-5 font-extrabold uppercase leading-[44px]">
+            Campagnes
+          </Link>
+          <Link to="/pro" className="ink-border min-h-[44px] rounded-full bg-ink px-5 font-extrabold uppercase leading-[44px] text-background">
+            Rollsy Pro
+          </Link>
           {isSuper && <AdminNotifications />}
           {isSuper && (
             <Link

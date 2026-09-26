@@ -728,6 +728,8 @@ export type SuperAdminRow = {
   accessStatus: AccessStatus;
   daysLeft: number | null;
   trialEndsAt: string | null;
+  plan: "free" | "pro";
+  subscriptionStatus: string | null;
 };
 
 export async function listAllMerchants(userId: string): Promise<SuperAdminRow[]> {
@@ -735,7 +737,7 @@ export async function listAllMerchants(userId: string): Promise<SuperAdminRow[]>
   const db = await admin();
   const { data: merchants } = await db
     .from("merchants")
-    .select("id, company_name, email, phone, slug, created_at, access_status, trial_ends_at")
+    .select("id, company_name, email, phone, slug, created_at, access_status, trial_ends_at, plan, subscription_status")
     .order("created_at", { ascending: false });
 
   const rows: SuperAdminRow[] = [];
@@ -762,6 +764,8 @@ export async function listAllMerchants(userId: string): Promise<SuperAdminRow[]>
       accessStatus: access.status,
       daysLeft: access.daysLeft,
       trialEndsAt: access.trialEndsAt,
+      plan: ((m as { plan?: string }).plan === "pro" ? "pro" : "free"),
+      subscriptionStatus: (m as { subscription_status?: string | null }).subscription_status ?? null,
     });
   }
   return rows;
