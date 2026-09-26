@@ -339,7 +339,7 @@ export async function syncMerchantFromSubscription(sub: {
     (sub.status === "canceled" && sub.currentPeriodEnd != null && periodActive);
   const patch: Record<string, unknown> = { plan: isPro ? "pro" : "free", subscription_status: sub.status };
   if (isPro) patch.access_status = "active";
-  await db.from("merchants").update(patch).eq("owner_id", sub.userId);
+  await db.from("merchants").update(patch as never).eq("owner_id", sub.userId);
 }
 
 export async function upsertSubscriptionRow(row: Record<string, unknown>) {
