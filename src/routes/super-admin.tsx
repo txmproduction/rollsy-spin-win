@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { withTimeout, useAppResume } from "@/lib/resilience";
 import { supabase } from "@/integrations/supabase/client";
 import { listMerchantsForSuperAdmin, setMerchantAccess } from "@/lib/rollsy.functions";
+import { setMerchantPlan } from "@/lib/pro.functions";
 
 export const Route = createFileRoute("/super-admin")({
   ssr: false,
@@ -26,6 +27,16 @@ const STATUS_LABELS: Record<string, string> = {
   trial: "Essai gratuit",
   active: "Accès permanent",
   suspended: "Accès suspendu",
+};
+
+const SUB_LABELS: Record<string, string> = {
+  active: "Actif",
+  trialing: "Actif",
+  past_due: "Impayé",
+  unpaid: "Impayé",
+  canceled: "Annulé",
+  ended: "Terminé",
+  incomplete: "Incomplet",
 };
 
 function statusClass(status: string) {
@@ -92,6 +103,19 @@ function SuperAdminPage() {
     }
   }
 
+  async function changePlan(row: Row, plan: "free" | "pro") {
+    setSavingId(row.id);
+    setError(null);
+    try {
+      await setMerchantPlan({ data: { merchantId: row.id, plan } });
+      await load();
+    } catch {
+      setError("Modification impossible.");
+    } finally {
+      setSavingId(null);
+    }
+  }
+
   if (booting) return null;
 
   return (
@@ -144,6 +168,24 @@ function SuperAdminPage() {
                 </div>
                 <div className="text-xs font-bold text-ink/60">Création</div>
               </div>
+            </div>
+
+            <div className="mb-4 flex flex-wrap items-center gap-x-6 gap-y-2 border-y border-ink/10 py-3 text-sm">
+              <span>
+                <span className="text-ink/50">Plan </span>
+                <span className="font-bold">{row.plan === "pro" ? "Pro" : "Free"}</span>
+              </span>
+              <span>
+                <span className="text-ink/50">Abonnement </span>
+                <span className="font-bold">{SUB_LABELS[row.subscriptionStatus ?? ""] ?? "Aucun"}</span>
+              </span>
+              <button
+                disabled={savingId === row.id}
+                onClick={() => void changePlan(row, row.plan === "pro" ? "free" : "pro")}
+                className="ml-auto text-sm font-bold underline underline-offset-4 disabled:opacity-40"
+              >
+                {row.plan === "pro" ? "Repasser en Free" : "Passer en Pro"}
+              </button>
             </div>
 
             <div className="flex flex-wrap gap-2">

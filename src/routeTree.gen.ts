@@ -12,10 +12,12 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AccesSuspenduRouteImport } from './routes/acces-suspendu'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as CampagnesRouteImport } from './routes/campagnes'
 import { Route as CgvRouteImport } from './routes/cgv'
 import { Route as CodesRouteImport } from './routes/codes'
 import { Route as ConfidentialiteRouteImport } from './routes/confidentialite'
 import { Route as ConfirmationRouteImport } from './routes/confirmation'
+import { Route as CrmRouteImport } from './routes/crm'
 import { Route as InscriptionRouteImport } from './routes/inscription'
 import { Route as MotDePasseOublieRouteImport } from './routes/mot-de-passe-oublie'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
@@ -45,6 +47,11 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CampagnesRoute = CampagnesRouteImport.update({
+  id: '/campagnes',
+  path: '/campagnes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CgvRoute = CgvRouteImport.update({
   id: '/cgv',
   path: '/cgv',
@@ -63,6 +70,11 @@ const ConfidentialiteRoute = ConfidentialiteRouteImport.update({
 const ConfirmationRoute = ConfirmationRouteImport.update({
   id: '/confirmation',
   path: '/confirmation',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CrmRoute = CrmRouteImport.update({
+  id: '/crm',
+  path: '/crm',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InscriptionRoute = InscriptionRouteImport.update({
@@ -137,10 +149,12 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/acces-suspendu': typeof AccesSuspenduRoute
   '/admin': typeof AdminRoute
+  '/campagnes': typeof CampagnesRoute
   '/cgv': typeof CgvRoute
   '/codes': typeof CodesRoute
   '/confidentialite': typeof ConfidentialiteRoute
   '/confirmation': typeof ConfirmationRoute
+  '/crm': typeof CrmRoute
   '/inscription': typeof InscriptionRoute
   '/mot-de-passe-oublie': typeof MotDePasseOublieRoute
   '/onboarding': typeof OnboardingRoute
@@ -159,10 +173,12 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/acces-suspendu': typeof AccesSuspenduRoute
   '/admin': typeof AdminRoute
+  '/campagnes': typeof CampagnesRoute
   '/cgv': typeof CgvRoute
   '/codes': typeof CodesRoute
   '/confidentialite': typeof ConfidentialiteRoute
   '/confirmation': typeof ConfirmationRoute
+  '/crm': typeof CrmRoute
   '/inscription': typeof InscriptionRoute
   '/mot-de-passe-oublie': typeof MotDePasseOublieRoute
   '/onboarding': typeof OnboardingRoute
@@ -182,10 +198,12 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/acces-suspendu': typeof AccesSuspenduRoute
   '/admin': typeof AdminRoute
+  '/campagnes': typeof CampagnesRoute
   '/cgv': typeof CgvRoute
   '/codes': typeof CodesRoute
   '/confidentialite': typeof ConfidentialiteRoute
   '/confirmation': typeof ConfirmationRoute
+  '/crm': typeof CrmRoute
   '/inscription': typeof InscriptionRoute
   '/mot-de-passe-oublie': typeof MotDePasseOublieRoute
   '/onboarding': typeof OnboardingRoute
@@ -206,10 +224,12 @@ export interface FileRouteTypes {
     | '/'
     | '/acces-suspendu'
     | '/admin'
+    | '/campagnes'
     | '/cgv'
     | '/codes'
     | '/confidentialite'
     | '/confirmation'
+    | '/crm'
     | '/inscription'
     | '/mot-de-passe-oublie'
     | '/onboarding'
@@ -228,10 +248,12 @@ export interface FileRouteTypes {
     | '/'
     | '/acces-suspendu'
     | '/admin'
+    | '/campagnes'
     | '/cgv'
     | '/codes'
     | '/confidentialite'
     | '/confirmation'
+    | '/crm'
     | '/inscription'
     | '/mot-de-passe-oublie'
     | '/onboarding'
@@ -250,10 +272,12 @@ export interface FileRouteTypes {
     | '/'
     | '/acces-suspendu'
     | '/admin'
+    | '/campagnes'
     | '/cgv'
     | '/codes'
     | '/confidentialite'
     | '/confirmation'
+    | '/crm'
     | '/inscription'
     | '/mot-de-passe-oublie'
     | '/onboarding'
@@ -273,10 +297,12 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccesSuspenduRoute: typeof AccesSuspenduRoute
   AdminRoute: typeof AdminRoute
+  CampagnesRoute: typeof CampagnesRoute
   CgvRoute: typeof CgvRoute
   CodesRoute: typeof CodesRoute
   ConfidentialiteRoute: typeof ConfidentialiteRoute
   ConfirmationRoute: typeof ConfirmationRoute
+  CrmRoute: typeof CrmRoute
   InscriptionRoute: typeof InscriptionRoute
   MotDePasseOublieRoute: typeof MotDePasseOublieRoute
   OnboardingRoute: typeof OnboardingRoute
@@ -315,6 +341,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/campagnes': {
+      id: '/campagnes'
+      path: '/campagnes'
+      fullPath: '/campagnes'
+      preLoaderRoute: typeof CampagnesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/cgv': {
       id: '/cgv'
       path: '/cgv'
@@ -341,6 +374,13 @@ declare module '@tanstack/react-router' {
       path: '/confirmation'
       fullPath: '/confirmation'
       preLoaderRoute: typeof ConfirmationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/crm': {
+      id: '/crm'
+      path: '/crm'
+      fullPath: '/crm'
+      preLoaderRoute: typeof CrmRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/inscription': {
@@ -441,10 +481,12 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccesSuspenduRoute: AccesSuspenduRoute,
   AdminRoute: AdminRoute,
+  CampagnesRoute: CampagnesRoute,
   CgvRoute: CgvRoute,
   CodesRoute: CodesRoute,
   ConfidentialiteRoute: ConfidentialiteRoute,
   ConfirmationRoute: ConfirmationRoute,
+  CrmRoute: CrmRoute,
   InscriptionRoute: InscriptionRoute,
   MotDePasseOublieRoute: MotDePasseOublieRoute,
   OnboardingRoute: OnboardingRoute,
